@@ -1,0 +1,622 @@
+﻿<!DOCTYPE html>
+<html lang="fa" dir="rtl" data-theme="blue">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>تحلیل استراتژی اختیار معامله</title>
+
+<!-- آیکون برنامه -->
+<link rel="icon" type="image/svg+xml" href="favicon.svg?v=1">
+<link rel="apple-touch-icon" href="favicon.svg?v=1">
+<meta name="theme-color" content="#2563eb">
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<script src="js/00-theme-init.js"></script>
+
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+
+<div id="loginGate" style="position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg, var(--grad-from) 0%, var(--grad-to) 100%);display:flex;align-items:center;justify-content:center;font-family:Vazirmatn,'B Nazanin',Tahoma,sans-serif;direction:rtl;">
+  <div style="background:#fff;border-radius:18px;padding:36px 32px;width:100%;max-width:380px;margin:20px;box-shadow:0 25px 60px -15px rgba(0,0,0,.5);animation:loginSlide .35s ease;">
+    <div style="text-align:center;margin-bottom:24px;">
+      <div style="width:64px;height:64px;border-radius:16px;margin:0 auto 14px;background:linear-gradient(135deg,var(--grad-to),var(--accent));display:flex;align-items:center;justify-content:center;font-size:32px;color:#fff;">🔐</div>
+      <h2 style="margin:0 0 4px;font-size:19px;color:#0f172a;font-weight:800;">ورود به پنل تحلیل</h2>
+      <p style="margin:0;font-size:13px;color:#64748b;">برای دسترسی، نام کاربری و رمز عبور خود را وارد کنید</p>
+    </div>
+    <div style="margin-bottom:14px;">
+      <label style="display:block;font-size:12.5px;color:#64748b;margin-bottom:6px;font-weight:700;">نام کاربری</label>
+      <input id="loginUser" type="text" autocomplete="username" style="width:100%;padding:11px 14px;border:1.5px solid #cbd5e1;border-radius:10px;font-family:inherit;font-size:14px;outline:none;transition:.15s;background:#fff;text-align:left;direction:ltr;">
+    </div>
+    <div style="margin-bottom:8px;">
+      <label style="display:block;font-size:12.5px;color:#64748b;margin-bottom:6px;font-weight:700;">رمز عبور</label>
+      <input id="loginPass" type="password" autocomplete="current-password" style="width:100%;padding:11px 14px;border:1.5px solid #cbd5e1;border-radius:10px;font-family:inherit;font-size:14px;outline:none;transition:.15s;background:#fff;text-align:left;direction:ltr;">
+    </div>
+    <div id="loginError" style="display:none;padding:9px 12px;margin-bottom:12px;background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;border-radius:8px;font-size:13px;font-weight:700;"></div>
+    <button id="loginBtn" type="button" style="width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--grad-from),var(--grad-to));color:#fff;font-family:inherit;font-size:14.5px;font-weight:800;cursor:pointer;transition:.15s;box-shadow:0 6px 16px -4px rgba(37,99,235,.6);">ورود به پنل</button>
+    <p style="margin:18px 0 0;text-align:center;font-size:11.5px;color:#94a3b8;">© پنل تحلیل استراتژی اختیار معامله</p>
+  </div>
+</div>
+
+<script src="js/12-login.js"></script>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand"><div class="logo-sq">📊</div><span>پنل تحلیل</span></div>
+    <div class="sidebar-section">منو</div>
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-view="main"><span class="ico">📈</span> تحلیل استراتژی</button>
+      <button class="nav-item" data-view="watchlist"><span class="ico">👁</span> دیده‌بان اختیار <span class="badge" id="wlBadge">0</span></button>
+      <button class="nav-item" data-view="marketmap"><span class="ico">🗺</span> نقشه بازار اختیار</button>
+      <button class="nav-item" data-view="coveredcall"><span class="ico">🛡</span> استراتژی کاورد کال <span class="badge" id="ccBadge">0</span></button>
+      <button class="nav-item" data-view="report"><span class="ico">📋</span> گزارش موقعیت‌ها <span class="badge" id="rpBadge">0</span></button>
+      <!-- منوی تست استراتژی برگشت داده شد -->
+      <button class="nav-item" data-view="strategytest"><span class="ico">🧪</span> تست استراتژی</button>
+      <button class="nav-item" data-view="tilltomorrow"><span class="ico">🎯</span> استراتژی تا فردا</button>
+      <button class="nav-item" data-view="calculations"><span class="ico">🧮</span> محاسبات خرید</button>
+      <button class="nav-item" data-view="settings"><span class="ico">🎨</span> تنظیمات</button>
+    </nav>
+  </aside>
+
+  <div class="content">
+
+    <div class="app" data-panel="main">
+      <header class="topbar">
+        <div class="logo">📊</div>
+        <div>
+          <h1>تحلیل استراتژی اختیار معامله</h1>
+          <div class="sub">دریافت داده از API بورس تهران (TSETMC)</div>
+        </div>
+        <div class="topbar-actions">
+          <span class="status" id="refreshStatus"><span class="dot wait"></span>آماده</span>
+          <button id="mainSettingsBtn" class="topbar-btn" title="انتخاب قالب ستون‌های دیده‌بان اختیار">⚙️ قالب‌ها</button>
+        </div>
+      </header>
+
+      <section class="card" id="card-upload">
+        <div class="card-head"><div class="num">۱</div><h2>دریافت داده‌های بازار</h2></div>
+        <div class="card-body">
+          <div class="load-panel">
+            <div class="icon">📡</div>
+            <div class="title">دریافت داده‌های بازار بورس تهران</div>
+            <div class="hint">برای شروع، دکمه زیر را بزنید. داده‌ها مستقیماً از API بورس دریافت می‌شوند.</div>
+            <div class="actions-row"><button id="fetchBtn" class="primary">📡 دریافت داده‌های بازار</button></div>
+          </div>
+          <div id="fileInfo"></div>
+        </div>
+      </section>
+
+      <section class="card hidden" id="card-strategy">
+        <div class="card-head">
+          <div class="num">۲</div><h2>تعریف استراتژی</h2>
+          <div class="hint" id="strategyHint"></div>
+        </div>
+        <div class="card-body">
+          <div class="grid-config">
+            <div class="field"><label for="underlyingSym">دارایی پایه</label><select id="underlyingSym"></select></div>
+            <div class="field"><label for="underlyingPrice">قیمت دارایی پایه</label><input id="underlyingPrice" type="number" step="any" value="0"></div>
+            <div class="field"><label for="ytm">نرخ سود بدون ریسک</label><input id="ytm" type="number" step="0.01" value="0.25"></div>
+            <div class="field"><label for="todayVal">تاریخ امروز</label><input id="todayVal" type="text" readonly></div>
+          </div>
+          <div class="range-row" id="rangeRow">
+            <span class="range-label">🔍 دامنه قیمت نمودار (تومان)</span>
+            <div class="field"><label for="priceMinInput">کمینه</label><input id="priceMinInput" type="number" step="any" placeholder="خودکار"></div>
+            <div class="field"><label for="priceMaxInput">بیشینه</label><input id="priceMaxInput" type="number" step="any" placeholder="خودکار"></div>
+            <button type="button" id="autoRangeBtn" class="range-reset">↺ خودکار</button>
+          </div>
+          <div class="options-row" style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;">
+            <span class="label">گزینه‌ها:</span>
+            <label class="toggle-switch" title="اگر غیرفعال باشد، وثیقه‌ها در محاسبات لحاظ نمی‌شوند">
+              <input type="checkbox" id="includeCollateral" checked>
+              <span class="slider"></span>
+              <span>محاسبه وثایق برای فروش اختیار</span>
+              <span class="state" id="collateralState">فعال</span>
+            </label>
+            
+            <label class="toggle-switch" title="اگر غیرفعال باشد، درآمد ثابت یا هزینه فرصت در محاسبات لحاظ نمی‌شود">
+              <input type="checkbox" id="includeFixedIncome" checked>
+              <span class="slider"></span>
+              <span>محاسبه درآمد ثابت / هزینه فرصت</span>
+              <span class="state" id="fixedIncomeState">فعال</span>
+            </label>
+            
+            <span class="hint">در حالت غیرفعال، مقدار آن ستون صفر در نظر گرفته می‌شود.</span>
+          </div>
+          <div style="margin-top:20px"><div class="legs-table" id="legs"></div></div>
+          <div class="actions">
+            <button id="calcBtn" class="primary">⚡ محاسبه و ساخت گزارش</button>
+            <button id="resetBtn">↺ بازنشانی موقعیت‌ها</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card hidden" id="card-report">
+        <div class="card-head"><div class="num">۳</div><h2>گزارش استراتژی در سررسید</h2></div>
+        <div class="card-body">
+          <div class="summary" id="summary"></div>
+          <div class="chart-wrap"><canvas id="chart"></canvas></div>
+          <div class="table-wrap"><table id="reportTable"></table></div>
+          <div class="actions"><button id="exportBtn" class="primary">⬇ خروجی اکسل گزارش</button></div>
+          <div class="note">
+            <b>توجه:</b> «خالص تغییرات نقد» = مجموع جریان نقد ورودی منهای خروجی در لحظه صفر.
+            «درآمد ثابت / هزینه فرصت» از محل (خالص تغییرات نقد − جمع وثایق) و به اندازه کوتاه‌ترین سررسید محاسبه می‌شود.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="app hidden" data-panel="watchlist">
+      <header class="topbar">
+        <div class="logo">👁</div>
+        <div>
+          <h1>دیده‌بان اختیار معامله</h1>
+          <div class="sub">فهرست کامل اختیارهای موجود — برای دیدن محاسبه هر عدد روی آن کلیک کنید</div>
+        </div>
+        <div class="topbar-actions"><span class="status" id="wlStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+      <section class="card">
+        <div class="card-head"><div class="num">👁</div><h2>جدول اختیارها</h2><div class="hint" id="watchlistHint"></div></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <input type="text" id="wlSearch" placeholder="🔎 جستجو در نماد، شرح یا دارایی پایه…">
+            <select id="wlFilterType"><option value="">همه انواع</option><option value="call">فقط Call</option><option value="put">فقط Put</option></select>
+            <select id="wlFilterStatus"><option value="">همه وضعیت‌ها</option><option value="ITM">ITM</option><option value="ATM">ATM</option><option value="OTM">OTM</option></select>
+            <select id="wlFilterUnderlying"><option value="">همه دارایی‌های پایه</option></select>
+            <div class="fee-group">
+              <label class="toggle-switch"><input type="checkbox" id="wlApplyFee" checked><span class="slider"></span><span>اعمال کارمزد</span></label>
+              <span class="fee-label">غیرصندوق (%):</span><input type="number" id="wlNonFundFee" step="0.01" min="0" value="1.5">
+              <span class="fee-label">صندوق (%):</span><input type="number" id="wlFundFee" step="0.01" min="0" value="0.3">
+            </div>
+            <button class="gear-btn" id="wlSettingsBtn" title="تنظیمات ستون‌ها و قالب‌ها">⚙️</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+            <button id="wlResetSortBtn" type="button" style="font-size:12px;padding:6px 12px">↺ بازنشانی مرتب‌سازی</button>
+            <button id="wlResetWidthsBtn" type="button" style="font-size:12px;padding:6px 12px">↔ بازنشانی عرض ستون‌ها</button>
+            <button id="wlResetFiltersBtn" type="button" style="font-size:12px;padding:6px 12px;border-color:var(--bad-line);color:var(--bad);">✕ پاک کردن فیلترها</button>
+            <span id="wlSortHint" style="font-size:11.5px;color:var(--muted)"></span>
+          </div>
+          <div class="table-wrap" style="max-height:calc(100vh - 380px)">
+            <table id="watchlistTable"><tbody><tr><td style="text-align:center;padding:30px;color:#64748b">در حال بارگذاری…</td></tr></tbody></table>
+          </div>
+
+        </div>
+      </section>
+    </div>
+
+    <div class="app hidden" data-panel="marketmap">
+      <header class="topbar">
+        <div class="logo">🗺</div>
+        <div><h1>نقشه بازار اختیار معامله</h1><div class="sub">اندازه هر مستطیل = ارزش معاملات • سبز = مثبت • قرمز = منفی</div></div>
+        <div class="topbar-actions"><span class="status" id="mmStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+      <section class="card">
+        <div class="card-head"><div class="num">🗺</div><h2>نقشه حرارتی اختیارها</h2><div class="hint" id="mmHint"></div></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <input type="text" id="mmSearch" placeholder="🔎 جستجو…">
+            <select id="mmFilterType"><option value="">همه انواع</option><option value="call">فقط Call</option><option value="put">فقط Put</option></select>
+            <select id="mmFilterDir"><option value="">همه</option><option value="up">فقط مثبت</option><option value="down">فقط منفی</option></select>
+            <select id="mmSizeBy">
+              <option value="tval">اندازه بر اساس ارزش معاملات</option>
+              <option value="tvol">اندازه بر اساس حجم معاملات</option>
+              <option value="tno">اندازه بر اساس تعداد معاملات</option>
+            </select>
+          </div>
+          <div class="marketmap-wrap" id="marketmapWrap">
+            <div class="mm-empty">هنوز داده‌ای دریافت نشده است. ابتدا از بخش «تحلیل استراتژی» دکمه <b>📡 دریافت داده‌های بازار</b> را بزنید.</div>
+          </div>
+          <div class="mm-legend">
+            <span><span class="swatch up"></span> مثبت</span>
+            <span><span class="swatch flat"></span> بدون تغییر</span>
+            <span><span class="swatch down"></span> منفی</span>
+            <span style="margin-inline-start:auto">اندازه مستطیل = مقدار معیار انتخابی | رنگ = درصد تغییر آخرین قیمت نسبت به قیمت پایانی دیروز</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="app hidden" data-panel="coveredcall">
+      <header class="topbar">
+        <div class="logo">🛡</div>
+        <div>
+          <h1>استراتژی کاورد کال (Covered Call)</h1>
+          <div class="sub">خرید سهم + فروش اختیار خرید — برای دیدن محاسبه هر عدد روی آن کلیک کنید</div>
+        </div>
+        <div class="topbar-actions"><span class="status" id="ccStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+
+      <section class="card">
+        <div class="card-head"><div class="num">🛡</div><h2>فرصت‌های کاورد کال</h2><div class="hint" id="ccHint"></div></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <input type="text" id="ccSearch" placeholder="🔎 جستجو در نماد، شرح یا دارایی پایه…">
+            <select id="ccFilterUnderlying"><option value="">همه دارایی‌های پایه</option></select>
+            <select id="ccFilterMoneyness">
+              <option value="all" selected>همه وضعیت‌ها</option>
+              <option value="otm">فقط OTM (K &gt; S)</option>
+              <option value="atm">فقط ATM</option>
+              <option value="itm">فقط ITM (K &lt; S)</option>
+            </select>
+                        <select id="ccAnnualMode" title="روش سالانه‌سازی بازده (سراسری)">
+              <option value="compound">سالانه‌سازی مرکب</option>
+              <option value="linear">سالانه‌سازی خطی (×۳۶۵/روز)</option>
+            </select>
+            <label style="display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--muted)">
+              <input type="checkbox" id="ccFeeOnPremium"> کارمزد روی پرمیوم
+            </label>
+            <div id="ccMathNote" class="hint" style="width:100%;margin-top:6px;line-height:1.9"></div>
+<select id="ccFilterDays">
+              <option value="">همه سررسیدها</option>
+              <option value="30">حداکثر ۳۰ روز</option>
+              <option value="45">حداکثر ۴۵ روز</option>
+              <option value="60">حداکثر ۶۰ روز</option>
+              <option value="90">حداکثر ۹۰ روز</option>
+              <option value="180">حداکثر ۱۸۰ روز</option>
+            </select>
+            <select id="ccSortBy" title="مرتب‌سازی سریع">
+              <option value="score">مرتب بر اساس امتیاز ترکیبی</option>
+              <option value="annualPrem">بیشترین پرمیوم سالانه</option>
+              <option value="annualMaxRet">بیشترین بازده سالانه</option>
+              <option value="premYield">بیشترین پرمیوم</option>
+              <option value="protection">بیشترین محافظت</option>
+            </select>
+            <div class="fee-group">
+              <label class="toggle-switch"><input type="checkbox" id="ccApplyFee" checked><span class="slider"></span><span>اعمال کارمزد</span></label>
+              <span class="fee-label">غیرصندوق (%):</span><input type="number" id="ccNonFundFee" step="0.01" min="0" value="1.5">
+              <span class="fee-label">صندوق (%):</span><input type="number" id="ccFundFee" step="0.01" min="0" value="0.3">
+            </div>
+          </div>
+
+          <div class="cc-offset-panel">
+            <div class="cc-offset-head">
+              <span class="ttl">📉 سناریوهای آفست (کف قیمت سهم در آینده)</span>
+              <label class="toggle-switch" title="با فعال‌کردن، برای هر سناریو یک ستون «سود آفست» در جدول اضافه می‌شود">
+                <input type="checkbox" id="ccOffsetEnabled">
+                <span class="slider"></span>
+                <span id="ccOffsetState">غیرفعال</span>
+              </label>
+              <button type="button" id="ccOffsetAddBtn" class="cc-offset-btn">+ افزودن سناریو</button>
+              <button type="button" id="ccOffsetClearBtn" class="cc-offset-btn">پاک کردن همه</button>
+              <span class="cc-offset-hint">💡 مثال: «در ۳۰ روز آینده کف قیمت سهم ۳۵۰ تومان» ⇒ روز=۳۰، کف قیمت=۳۵۰</span>
+            </div>
+            <div id="ccOffsetScenarios" class="cc-offset-list"></div>
+          </div>
+
+          <div id="ccTop"></div>
+
+          <div class="table-wrap" style="max-height:calc(100vh - 420px)">
+            <table id="ccTable"><tbody><tr><td style="text-align:center;padding:30px;color:#64748b">در حال بارگذاری…</td></tr></tbody></table>
+          </div>
+
+          <div class="note" style="margin-top:14px">
+            <b>راهنمای معیارها:</b>
+            <b>% پرمیوم</b> = پرمیوم خالص دریافتی ÷ (S − پرمیوم). &nbsp;
+            <b>% سالانه پرمیوم</b> = همین مقدار، سالانه‌شده بر مبنای سررسید. &nbsp;
+            <b>% بازده سررسید</b> = بازده کل در صورت رسیدن سهم به K: <code>(K − S + پرمیوم خالص) ÷ (S − پرمیوم)</code> — همان فرمول و همان مخرجی که در دیده‌بان برای «deep in the money» استفاده می‌شود. &nbsp;
+            <b>% محافظت</b> = میزان افت قابل تحمل سهم (برابر با % پرمیوم). &nbsp;
+            <b>سربه‌سر سهم</b> = S − پرمیوم خالص. &nbsp;
+            <b>امتیاز ترکیبی</b> = ۳۵٪ پرمیوم سالانه + ۳۵٪ بازده سالانه + ۱۵٪ محافظت + ۱۵٪ فاصله OTM.
+            <br>
+            <b>📉 سود آفست:</b> اگر سهم در تاریخ آفست به «کف قیمت» برسد و شما کل موقعیت را ببندید:
+            <br>
+            <code>خالص سرمایه‌گذاری = S₀ − پرمیوم خالص</code>
+            &nbsp;•&nbsp;
+            <code>درآمد آفست = کف قیمت − ارزش اختیار در آن لحظه</code>
+            &nbsp;•&nbsp;
+            <code>سود آفست = درآمد آفست − خالص سرمایه‌گذاری</code>
+            <br>
+            <b>💡 راهنما:</b> روی <b>هر عدد</b> در جدول کلیک کنید تا پنجره‌ی محاسبه‌ی آن باز شود.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========== پنل گزارش موقعیت‌ها ========== -->
+    <div class="app hidden" data-panel="report">
+      <header class="topbar">
+        <div class="logo">📋</div>
+        <div>
+          <h1>گزارش موقعیت‌های اختیار</h1>
+          <div class="sub">موقعیت‌های خرید/فروش خود را ثبت کنید و سود یا زیان لحظه‌ای را ببینید</div>
+        </div>
+        <div class="topbar-actions"><span class="status" id="rpStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+
+      <section class="card">
+        <div class="card-head"><div class="num">➕</div><h2>افزودن موقعیت جدید</h2><div class="hint" id="rpHint"></div></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <select id="rpAddType" style="width:150px" title="نوع موقعیت">
+              <option value="option" selected>اختیار</option>
+              <option value="underlying">دارایی پایه</option>
+            </select>
+            <input type="text" id="rpAddSearch" placeholder="🔎 جستجو در نماد / دارایی پایه / قیمت اعمال…" style="flex:1;min-width:200px">
+            <select id="rpAddOption" style="flex:2;min-width:300px"><option value="">— انتخاب —</option></select>
+            <select id="rpAddDirection" title="جهت موقعیت">
+              <option value="sell" selected>فروش</option>
+              <option value="buy">خرید</option>
+            </select>
+            <input type="number" id="rpAddQty" placeholder="تعداد" value="1000" min="1" step="1" style="width:110px">
+            <input type="number" id="rpAddPremium" placeholder="میانگین پرمیوم/قیمت" step="any" style="width:160px">
+            
+            <!-- فیلد تاریخ سرمایه‌گذاری -->
+            <input type="text" id="rpAddDate" placeholder="تاریخ سرمایه‌گذاری" style="width:160px;padding:9px 12px;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);outline:none;text-align:center;">
+            
+            <!-- فیلد جدید نام استراتژی -->
+            <input type="text" id="rpAddStrategyName" list="rpStrategyNameList" placeholder="نام استراتژی (اختیاری)" style="width:160px;padding:9px 12px;border:1px solid var(--line-2);border-radius:8px;font-family:inherit;font-size:13.5px;background:#fff;color:var(--ink);outline:none;text-align:center;">
+            
+            <button id="rpAddBtn" class="primary">+ افزودن به گزارش</button>
+            <datalist id="rpStrategyNameList"></datalist>
+          </div>
+          <div class="alert info" style="margin-top:12px;font-size:12.5px">
+            می‌توانید <b>دارایی پایه</b> (خرید/فروش سهم) یا <b>اختیار</b> را اضافه کنید.
+            درصد پوشش هر اختیار فروش نسبت به مجموع دارایی پایه خریداری‌شده محاسبه می‌شود.
+            ستون <b>وضعیت</b> تعیین می‌کند اختیار در سررسید اعمال شود یا بسوزد؛ YTM بر این اساس محاسبه می‌گردد.
+            <br>
+            <b>تاریخ سرمایه‌گذاری:</b> با وارد کردن تاریخ (مثلاً 1402/01/01)، روزهای سپری شده و <b>درصد سود آفست</b> و <b>سالانه آفست</b> به صورت خودکار محاسبه می‌شوند.
+            <br>
+            <b>ستون‌های «مبلغ موقعیت» و «مبلغ بستن»:</b> اولی مبلغی است که در ابتدا پرداخت/دریافت کرده‌اید؛ دومی ارزش لحظه‌ای همان تعداد در قیمت فعلی بازار است. <b>سود/زیان</b> = تفاضل این دو با توجه به جهت موقعیت (فروش: دریافتی − بستن، خرید: بستن − پرداختی).
+          </div>
+        </div>
+      </section>
+
+      <!-- نوار ابزار بالای صفحه -->
+      <section class="card">
+        <div class="card-body" style="padding:16px;">
+          <div class="actions" style="margin-top:0;padding-top:0;border-top:none;align-items:center;flex-wrap:wrap;gap:12px;">
+            <button id="rpAddNewStrategyBtn" class="primary" style="font-size:14px;padding:10px 20px;">➕ ایجاد استراتژی جدید</button>
+            
+            <div style="flex:1"></div>
+            
+            <span style="font-size:12.5px;color:var(--muted);font-weight:800;">تفکیک استراتژی:</span>
+            <select id="rpGroupByStrategy" style="padding:8px 12px;border:2px solid var(--primary);border-radius:8px;font-family:inherit;font-size:13px;background:#eff6ff;color:var(--primary-2);outline:none;cursor:pointer;font-weight:700;min-width:200px;">
+              <option value="all">همه استراتژی‌ها</option>
+            </select>
+
+            <button id="rpFileSaveBtn" type="button" title="ذخیره در فایل" style="border-color:#15803d;color:#15803d">💾 ذخیره در فایل</button>
+            <button id="rpFileOpenBtn" type="button" title="باز کردن فایل" style="border-color:#0369a1;color:#0369a1">📂 باز کردن فایل</button>
+            <input type="file" id="rpUploadInput" accept=".json,application/json" style="display:none">
+            <span id="rpBackupStatus" style="font-size:11.5px;color:var(--muted);margin-inline-start:10px;"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- نمایش جدول -->
+      <section class="card" id="rpDisplayCard">
+        <div class="card-head"><div class="num">📋</div><h2>جدول موقعیت‌ها</h2><div class="hint" id="rpTableHint"></div></div>
+        <div class="card-body">
+          <div class="summary" id="rpSummary"></div>
+          
+          <div class="actions" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:12px;align-items:center;flex-wrap:wrap;gap:12px">
+            <button id="rpExportPngBtn" type="button">📷 خروجی عکس</button>
+            <button id="rpExportPdfBtn" type="button">📄 خروجی PDF</button>
+            <button id="rpExportExcelBtn" type="button">📊 خروجی اکسل</button>
+            <button id="rpPrintBtn" type="button">🖨 چاپ جدول (PDF)</button>
+            <button id="rpClearBtn" type="button" style="border-color:var(--bad-line);color:var(--bad);margin-inline-start:auto;">✕ پاک کردن همه موقعیت‌ها</button>
+          </div>
+
+          <div class="table-wrap" style="max-height:calc(100vh - 460px)">
+            <table id="rpTable"><tbody><tr><td style="text-align:center;padding:30px;color:#64748b">هنوز موقعیتی ثبت نشده است.</td></tr></tbody></table>
+          </div>
+          
+          <div class="chart-wrap" style="height:420px;margin-top:16px">
+            <canvas id="rpChart"></canvas>
+          </div>
+          
+          <div class="note" style="margin-top:14px">
+            <b>راهنما:</b>
+            با کلیک روی <b>«ایجاد استراتژی جدید»</b> یک ردیف خام برای شما باز می‌شود. در ستون «نماد»، سهم یا اختیار مورد نظر را انتخاب کنید تا قیمت اعمال و سررسید به صورت خودکار پر شوند. سپس تعداد و میانگین پرمیوم/قیمت خود را وارد کنید. برای هر استراتژی می‌توانید ردیف‌های جدید اضافه کنید.
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========== پنل تست استراتژی ========== -->
+    <div class="app hidden" data-panel="strategytest">
+      <header class="topbar">
+        <div class="logo">🧪</div>
+        <div>
+          <h1>تست استراتژی (Sandbox)</h1>
+          <div class="sub">استراتژی‌های فرضی خود را بسازید، نمودار و بازده را ببینید (بدون ذخیره در گزارش اصلی)</div>
+        </div>
+        <div class="topbar-actions"><span class="status" id="stStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+
+      <section class="card">
+        <div class="card-head"><div class="num">➕</div><h2>افزودن موقعیت به تست</h2></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <select id="stAddType" style="width:150px">
+              <option value="option" selected>اختیار</option>
+              <option value="underlying">دارایی پایه</option>
+            </select>
+            <input type="text" id="stAddSearch" placeholder="🔎 جستجو در نماد / دارایی پایه..." style="flex:1;min-width:200px">
+            <select id="stAddOption" style="flex:2;min-width:300px"><option value="">— انتخاب —</option></select>
+            <select id="stAddDirection">
+              <option value="sell" selected>فروش</option>
+              <option value="buy">خرید</option>
+            </select>
+            <input type="number" id="stAddQty" placeholder="تعداد" value="1000" min="1" step="1" style="width:110px">
+            <input type="number" id="stAddPremium" placeholder="میانگین پرمیوم/قیمت" step="any" style="width:160px">
+            <button id="stAddBtn" class="primary">+ افزودن</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" id="stDisplayCard">
+        <div class="card-head"><div class="num">📋</div><h2>موقعیت‌های تست شده</h2></div>
+        <div class="card-body">
+          <div class="summary" id="stSummary"></div>
+          <div class="actions" style="margin-bottom:12px; padding-top:0; border-top:none;">
+            <button id="stClearBtn" type="button" style="border-color:var(--bad-line);color:var(--bad)">✕ پاک کردن همه</button>
+            <button id="stPrintBtn" type="button" title="چاپ جدول تست">🖨 چاپ / PDF</button>
+          </div>
+          <div class="table-wrap" style="max-height:calc(100vh - 460px)">
+            <table id="stTable"><tbody><tr><td style="text-align:center;padding:30px;color:#64748b">هنوز موقعیتی برای تست اضافه نشده است.</td></tr></tbody></table>
+          </div>
+          <div class="chart-wrap" style="height:420px;margin-top:16px">
+            <canvas id="stChart"></canvas>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========== پنل استراتژی تا فردا ========== -->
+    <div class="app hidden" data-panel="tilltomorrow">
+      <header class="topbar">
+        <div class="logo">🎯</div>
+        <div>
+          <h1>استراتژی تا فردا (Roll Analysis)</h1>
+          <div class="sub">تحلیل رول کردن موقعیت‌های فعلی به سررسید بعدی بر اساس داده‌های «گزارش موقعیت‌ها»</div>
+        </div>
+        <div class="topbar-actions"><span class="status" id="ttStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+
+      <section class="card">
+        <div class="card-head"><div class="num">🎯</div><h2>پیشنهاد رول به سررسید بعدی</h2><div class="hint" id="ttHint"></div></div>
+        <div class="card-body">
+          <div class="actions" style="margin-top:0;padding-top:0;border-top:none;margin-bottom:16px;gap:10px">
+            <button id="ttAnalyzeBtn" class="primary">🔍 تحلیل و پیشنهاد رول</button>
+            
+            <!-- منوی انتخاب استراتژی -->
+            <select id="ttStrategySelect" style="padding: 8px 12px; border: 1px solid var(--line-2); border-radius: 8px; font-family: inherit; font-size: 13px; background: #fff; color: var(--ink); outline: none; cursor: pointer; min-width: 200px;">
+              <option value="all">همه استراتژی‌ها</option>
+            </select>
+
+            <button id="ttPrintBtn" type="button" title="چاپ جدول تحلیل رول — سپس در پنجره چاپ Save as PDF را بزنید">🖨 چاپ خروجی تحلیل رول (PDF)</button>
+            <span style="font-size:12.5px;color:var(--muted);align-self:center;margin-right:10px">این بخش از داده‌های ثبت شده در تب «گزارش موقعیت‌ها» استفاده می‌کند.</span>
+          </div>
+          
+          <div id="ttSummary" class="summary"></div>
+
+          <div class="table-wrap" style="max-height:calc(100vh - 400px)">
+            <table id="ttTable">
+              <tbody><tr><td style="text-align:center;padding:30px;color:#64748b">برای مشاهده پیشنهادات، دکمه «تحلیل و پیشنهاد رول» را بزنید.</td></tr></tbody>
+            </table>
+          </div>
+
+          <div class="note" style="margin-top:16px">
+            <b>راهنمای تحلیل رول:</b>
+            این بخش موقعیت‌های فروش اختیار شما را بررسی می‌کند. اگر سررسید نزدیک باشد، سیستم به دنبال بهترین اختیار در <b>سررسید بعدی</b> (با نزدیک‌ترین قیمت اعمال) می‌گردد و محاسبه می‌کند:
+            <br>
+            <code>جریان نقدی رول = پرمیوم دریافتی از فروش جدید - هزینه خرید برای بستن موقعیت فعلی</code>
+            <br>
+            سپس <b>YTM جدید</b> را در صورت رول کردن، با YTM فعلی شما مقایسه می‌کند. اگر YTM جدید بالاتر باشد، رول کردن توصیه می‌شود (وضعیت: <b class="pos">پیشنهاد می‌شود</b>).
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ========== پنل محاسبات خرید ========== -->
+    <div class="app hidden" data-panel="calculations">
+      <header class="topbar">
+        <div class="logo">🧮</div>
+        <div>
+          <h1>محاسبات خرید اختیار</h1>
+          <div class="sub">قیمت اختیار را دستی وارد کنید تا معیارهای آن بلافاصله محاسبه شوند</div>
+        </div>
+        <div class="topbar-actions"><span class="status" id="calcStatus"><span class="dot wait"></span>در انتظار داده</span></div>
+      </header>
+
+      <section class="card">
+        <div class="card-head"><div class="num">🧮</div><h2>جدول محاسبات</h2><div class="hint" id="calcHint"></div></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <input type="text" id="calcSearch" placeholder="🔎 جستجو در نماد، شرح یا دارایی پایه…">
+            <select id="calcFilterType">
+              <option value="">همه انواع</option>
+              <option value="call">فقط Call</option>
+              <option value="put">فقط Put</option>
+            </select>
+            <select id="calcFilterUnderlying"><option value="">همه دارایی‌های پایه</option></select>
+            <button id="calcResetPricesBtn" type="button" style="font-size:12px;padding:7px 12px">↺ بازنشانی همه قیمت‌های دستی</button>
+            <div class="fee-group">
+              <label class="toggle-switch"><input type="checkbox" id="calcApplyFee" checked><span class="slider"></span><span>اعمال کارمزد</span></label>
+              <span class="fee-label">غیرصندوق (%):</span><input type="number" id="calcNonFundFee" step="0.01" min="0" value="1.5">
+              <span class="fee-label">صندوق (%):</span><input type="number" id="calcFundFee" step="0.01" min="0" value="0.3">
+            </div>
+          </div>
+          <div class="table-wrap" style="max-height:calc(100vh - 380px)">
+            <table id="calcTable"><tbody><tr><td style="text-align:center;padding:30px;color:#64748b">در حال بارگذاری…</td></tr></tbody></table>
+          </div>
+          <div class="note" style="margin-top:14px">
+            <b>راهنما:</b>
+            در ستون <b>«قیمت دستی»</b> می‌توانید قیمت اختیار را دستی وارد کنید تا معیارهای «Deep» و «سوخت» بلافاصله به‌روز شوند.
+            اگر خالی بماند، از آخرین قیمت بازار (ستون «قیمت بازار») استفاده می‌شود.
+            برای پاک کردن یک ردیف، مقدار فیلد را حذف کنید. برای درج سریع قیمت بازار، روی سلول «قیمت بازار» کلیک کنید.
+            <br>
+            <b>فرمول‌ها:</b>
+            <code>Deep = K − S + (P − fee)</code> &nbsp;•&nbsp;
+            <code>سوخت = P − fee</code> &nbsp;•&nbsp;
+            <code>% سالانه = (1 + r)^(365/days) − 1</code> (یا خطی، بسته به تنظیمات کاورد کال)
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <div class="app hidden" data-panel="settings">
+      <header class="topbar">
+        <div class="logo">🎨</div>
+        <div><h1>تنظیمات ظاهری</h1><div class="sub">انتخاب پوسته و ترکیب رنگ برنامه — تغییرات به‌صورت خودکار ذخیره می‌شود</div></div>
+      </header>
+      <section class="card">
+        <div class="card-head"><div class="num">🎨</div><h2>پوسته رنگی</h2><div class="hint" id="themeHint"></div></div>
+        <div class="card-body">
+          <div class="theme-grid" id="themeGrid"></div>
+          <div class="theme-note">💡 پوسته انتخابی روی کل برنامه اعمال می‌شود و در همین مرورگر ذخیره می‌گردد.</div>
+          <div class="actions"><button id="themeResetBtn">↺ بازگشت به پوسته پیش‌فرض (آبی اقیانوس)</button></div>
+        </div>
+      </section>
+    </div>
+
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="wlSettingsOverlay">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <span style="font-size:18px">⚙️</span>
+      <h3>تنظیمات ستون‌های دیده‌بان</h3>
+      <button class="modal-close" id="wlSettingsClose" title="بستن">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="section-label">قالب‌های آماده</div>
+      <div class="templates-row" id="wlTemplatesRow">
+        <button data-template="full">کامل</button>
+        <button data-template="compact">فشرده</button>
+        <button data-template="deepitm">deep ITM</button>
+        <button data-template="sookht">سوخت</button>
+        <button data-template="trading">معاملات</button>
+      </div>
+      <div class="section-label" style="margin-top:8px">ستون‌های دلخواه</div>
+      <div class="columns-grid" id="wlColumnsList"></div>
+      <div class="modal-actions">
+        <button id="wlResetCols">↺ بازنشانی به پیش‌فرض</button>
+        <button class="primary" id="wlApplyCols">✓ اعمال و بستن</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="calcPopover" class="cc-popover hidden" role="tooltip" aria-hidden="true"></div>
+<div id="wlFilterPopover" class="cc-popover hidden" role="tooltip" aria-hidden="true" style="min-width: 220px; z-index: 10060;"></div>
+
+<script src="js/01-core.js"></script>
+<script src="js/02-data.js"></script>
+<script src="js/03-strategy.js"></script>
+<script src="js/04-chart-and-shell.js"></script>
+<script src="js/05-watchlist.js"></script>
+<script src="js/06-marketmap-themes.js"></script>
+<script src="js/07-popover.js"></script>
+<script src="js/08-covered-call.js"></script>
+<script src="js/09-till-tomorrow.js"></script>
+<script src="js/10-manual-calc.js"></script>
+<script src="js/11-saved-positions.js"></script>
+<script src="js/13-strategy-test.js"></script>
+</body>
+</html>

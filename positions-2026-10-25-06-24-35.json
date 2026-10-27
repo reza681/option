@@ -1,0 +1,129 @@
+{
+  "app": "option-strategy-panel",
+  "version": 2,
+  "savedAt": "2026-10-26T12:50:49.808Z",
+  "count": 11,
+  "positions": [
+    {
+      "id": "rp_1793018440396_gtil0e",
+      "type": "underlying",
+      "sym": "خودرو",
+      "direction": "buy",
+      "qty": 160158752,
+      "avgPremium": 690,
+      "assigned": true,
+      "investmentDate": "1405/07/26",
+      "strategyName": "خودرو 1"
+    },
+    {
+      "id": "rp_1793018499144_ndvkmm",
+      "type": "option",
+      "sym": "ضخود9052",
+      "direction": "sell",
+      "qty": 64064000,
+      "avgPremium": 132,
+      "assigned": true,
+      "investmentDate": "1405/07/26",
+      "strategyName": "خودرو 1"
+    },
+    {
+      "id": "rp_1793018521977_och6m0",
+      "type": "option",
+      "sym": "ضخود9053",
+      "direction": "sell",
+      "qty": 48048000,
+      "avgPremium": 105,
+      "assigned": true,
+      "investmentDate": "1405/07/26",
+      "strategyName": "خودرو 1"
+    },
+    {
+      "id": "rp_1793018539288_fvme9n",
+      "type": "option",
+      "sym": "ضخود9054",
+      "direction": "sell",
+      "qty": 32032000,
+      "avgPremium": 84,
+      "assigned": true,
+      "investmentDate": "1405/07/26",
+      "strategyName": "خودرو 1"
+    },
+    {
+      "id": "rp_1793018570853_giaa5x",
+      "type": "option",
+      "sym": "ضخود9055",
+      "direction": "sell",
+      "qty": 16014000,
+      "avgPremium": 64,
+      "assigned": true,
+      "investmentDate": "1405/07/26",
+      "strategyName": "خودرو 1"
+    },
+    {
+      "id": "rp_1793018831375_q2vptu",
+      "type": "underlying",
+      "sym": "اهرم",
+      "direction": "buy",
+      "qty": 1400000,
+      "avgPremium": 72481,
+      "assigned": true,
+      "investmentDate": "1405/08/04",
+      "strategyName": "اهرم 1"
+    },
+    {
+      "id": "rp_1793018879367_ab61r6",
+      "type": "option",
+      "sym": "ضهرم9026",
+      "direction": "sell",
+      "qty": 140000,
+      "avgPremium": 20774,
+      "assigned": true,
+      "investmentDate": "1405/08/04",
+      "strategyName": "اهرم 1"
+    },
+    {
+      "id": "rp_1793018907322_smgexk",
+      "type": "option",
+      "sym": "ضهرم9027",
+      "direction": "sell",
+      "qty": 280000,
+      "avgPremium": 16656,
+      "assigned": true,
+      "investmentDate": "1405/08/04",
+      "strategyName": "اهرم 1"
+    },
+    {
+      "id": "rp_1793018931098_kdqneg",
+      "type": "option",
+      "sym": "ضهرم9028",
+      "direction": "sell",
+      "qty": 350000,
+      "avgPremium": 13051,
+      "assigned": true,
+      "investmentDate": "1405/08/04",
+      "strategyName": "اهرم 1"
+    },
+    {
+      "id": "rp_1793018967926_grylgv",
+      "type": "option",
+      "sym": "ضهرم9029",
+      "direction": "sell",
+      "qty": 410000,
+      "avgPremium": 10243,
+      "assigned": true,
+      "investmentDate": "1405/08/04",
+      "strategyName": "اهرم 1"
+    },
+    {
+      "id": "rp_1793018988446_rdmq2n",
+      "type": "option",
+      "sym": "ضهرم9030",
+      "direction": "sell",
+      "qty": 220000,
+      "avgPremium": 7984,
+      "assigned": true,
+      "investmentDate": "1405/08/04",
+      "strategyName": "اهرم 1"
+    }
+  ]
+}
