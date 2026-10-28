@@ -655,3 +655,78 @@
   #ttTable td[data-tt-calc]:hover::after {
     opacity: 0.9;
   }
+
+  /* ====== منوی کشویی حالت دستی در استراتژی تا فردا ====== */
+  .tt-manual-select {
+      padding: 6px 8px;
+      font-size: 12px;
+      border: 1px solid var(--line-2);
+      border-radius: 6px;
+      background: var(--card);
+      color: var(--ink);
+      font-family: inherit;
+      cursor: pointer;
+      width: 100%;
+      min-width: 130px;
+      max-width: 180px;
+      outline: none;
+      direction: ltr;
+      text-align: left;
+  }
+  .tt-manual-select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(37,99,235,.15);
+  }
+  html[data-theme="dark"] .tt-manual-select {
+      background: #0f1a2b;
+      color: var(--ink);
+      border-color: var(--line-2);
+  }
+/* ====== منوی کشویی حالت دستی در استراتژی تا فردا ====== */
+.tt-manual-select {
+    padding: 6px 8px;
+    font-size: 12px;
+    border: 1px solid var(--line-2);
+    border-radius: 6px;
+    background: var(--card);
+    color: var(--ink);
+    font-family: inherit;
+    cursor: pointer;
+    width: 100%;
+    min-width: 130px;
+    max-width: 180px;
+    outline: none;
+    direction: ltr;
+    text-align: left;
+}
+.tt-manual-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(37,99,235,.15);
+}
+html[data-theme="dark"] .tt-manual-select {
+    background: #0f1a2b;
+    color: var(--ink);
+    border-color: var(--line-2);
+}
+
+/* استایل فیلد درصد در حالت دستی */
+.tt-manual-percent {
+    width: 50px;
+    padding: 4px;
+    text-align: center;
+    border: 1px solid var(--line-2);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+.tt-manual-percent:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 2px rgba(37,99,235,.15);
+}
+html[data-theme="dark"] .tt-manual-percent {
+    background: #0f1a2b;
+    color: var(--ink);
+    border-color: var(--line-2);
+}
