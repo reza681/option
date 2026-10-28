@@ -20,7 +20,9 @@ const state = {
   calcManualPrices: {},
   calcApplyFee: true, calcNonFundFeePct: 1.5, calcFundFeePct: 0.3,
   savedPositions: [],
-  stPositions: [] // استیت مستقل برای تست استراتژی
+  stPositions: [], // استیت مستقل برای تست استراتژی
+  ttManualSelections: {}, // استیت برای ذخیره انتخاب‌های دستی در استراتژی تا فردا
+  ttManualPercentages: {}, // استیت جدید برای ذخیره درصد رول در حالت دستی
 };
 state.wlActiveCols = loadActiveCols();
 state.wlSort = loadSort();
