@@ -17,6 +17,8 @@ const positionLedger = (() => {
   const nameOf = p => p.strategyName || 'بدون نام';
   const selected = () => state.savedPositions.filter(p => nameOf(p) === select.value);
   let draft = [], editing = null;
+  /* تاریخ بسته شدن شمسی استراتژی؛ برای رکوردهای قدیمی از closedAt استخراج می‌شود */
+  const closeDateOf = s => s.closeDate || isoToJalaliStr(s.closedAt);
   const day = v => {
     const parts = parseJalaliDate(v); if (!parts) return null;
     const [y,m,d] = parts, utc = (y,m,d) => { const [a,b,c] = jalaliToGregorian(y,m,d); return Date.UTC(a,b-1,c)/86400000; };
@@ -43,9 +45,11 @@ const positionLedger = (() => {
   }
   function history(archive = state.closedStrategies, el = $('#ledgerHistory')){
     if (!archive.length) { el.textContent = 'هنوز استراتژی بسته‌شده‌ای ثبت نشده است.'; return; }
+    const editable = el.id === 'ledgerHistory';
+    const editBtn = idx => editable ? `<button type="button" data-ledger-edit="${idx}" title="ویرایش تاریخ بسته شدن، قیمت‌ها و جزئیات این استراتژی" style="padding:2px 10px;font-size:11.5px;font-weight:700;border:1px solid #0369a1;color:#0369a1;background:var(--card);border-radius:6px;cursor:pointer">✏️ ویرایش</button>` : '';
     el.innerHTML = `<p>جمع سود و زیان پس از کسر کارمزد ثبت‌شده: <b>${money(total(archive.map(realized)))} ریال</b></p>` + archive.slice().reverse().map((s,i) =>
-      `<details><summary>${escapeHtml(s.name)} · ${new Date(s.closedAt).toLocaleString('fa-IR')} · ${money(realized(s))} ریال</summary><p>کارمزد ثبت‌شده: ${money(s.fees)} ریال</p>` +
-      returns(s) + (el.id === 'ledgerHistory' ? `<p><button type="button" data-ledger-edit="${archive.length-1-i}">ویرایش موقعیت بسته‌شده</button></p>` : '') + table([...headers,'قیمت خروج','سود و زیان پیش از کارمزد'], s.legs.map(p => [...cells(p),money(p.exitPrice),money(ledgerPnl(p,p.exitPrice))])) + '</details>').join('');
+      `<details><summary>${escapeHtml(s.name)} · تاریخ بسته شدن: <b dir="ltr">${escapeHtml(closeDateOf(s))}</b> · ${money(realized(s))} ریال ${editBtn(archive.length-1-i)}</summary><p>کارمزد ثبت‌شده: ${money(s.fees)} ریال · زمان ثبت: ${new Date(s.closedAt).toLocaleString('fa-IR')}</p>` +
+      returns(s) + (editable ? `<p>${editBtn(archive.length-1-i)}</p>` : '') + table([...headers,'قیمت خروج','سود و زیان پیش از کارمزد'], s.legs.map(p => [...cells(p),money(p.exitPrice),money(ledgerPnl(p,p.exitPrice))])) + '</details>').join('');
   }
   function marks(positions = state.savedPositions, priceOf = mark, el = $('#ledgerMarks'), shared = false){
     if (!positions.length) { el.textContent = 'موقعیت بازی وجود ندارد.'; return; }
@@ -67,7 +71,7 @@ const positionLedger = (() => {
     const savedAt = new Date().toISOString();
     const data = {format:'option-ledger-view', version:1, savedAt,
       open:state.savedPositions.map(p => ({...shareLeg(p), mark:mark(p)})),
-      closed:state.closedStrategies.map(s => ({name:s.name, closedAt:s.closedAt, fees:s.fees, from:s.from,to:s.to,capital:s.capital,rateMode:s.rateMode, legs:s.legs.map(p => ({...shareLeg(p), exitPrice:p.exitPrice}))}))};
+      closed:state.closedStrategies.map(s => ({name:s.name, closedAt:s.closedAt, closeDate:s.closeDate, fees:s.fees, from:s.from,to:s.to,capital:s.capital,rateMode:s.rateMode, legs:s.legs.map(p => ({...shareLeg(p), exitPrice:p.exitPrice}))}))};
     const url = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'}));
     const a = document.createElement('a'); a.href = url; a.download = 'ledger-view-' + savedAt.slice(0,10) + '.json';
     document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000);
@@ -104,12 +108,24 @@ const positionLedger = (() => {
     const feeEl = $('#ledgerFees');
     const capital = $('#ledgerCapital'), from = $('#ledgerFrom').value.trim(), to = $('#ledgerTo').value.trim();
     if (capital.validity.badInput || (capital.value && !(capital.valueAsNumber > 0)) || (from && day(from) === null) || (to && day(to) === null) || (from && to && day(to) <= day(from))) return null;
-    const s = {...editing,name:editing?.name ?? select.value,closedAt:editing?.closedAt ?? new Date().toISOString(),from,to,capital:capital.valueAsNumber || null,rateMode:editing?.rateMode || getAnnualMode(),fees:feeEl.value === '' && !feeEl.validity.badInput ? 0 : feeEl.valueAsNumber,legs};
+    /* تاریخ بسته شدن: خالی یعنی همان مقدار قبلی/امروز */
+    const closeDateEl = $('#ledgerCloseDate');
+    const closeRaw = closeDateEl ? closeDateEl.value.trim().replace(/[-\s]+/g, '/') : '';
+    if (closeRaw && day(closeRaw) === null) return null;
+    const closeDate = closeRaw ? normalizeExpiryStr(closeRaw) : (editing?.closeDate || todayJalaliStr());
+    let name = editing?.name ?? select.value;
+    if (editing){
+      const nameEl = $('#ledgerName');
+      const nm = nameEl ? nameEl.value.trim() : '';
+      if (!nm) return null;
+      name = nm;
+    }
+    const s = {...editing,name,closedAt:editing?.closedAt ?? new Date().toISOString(),closeDate,from,to,capital:capital.valueAsNumber || null,rateMode:editing?.rateMode || getAnnualMode(),fees:feeEl.value === '' && !feeEl.validity.badInput ? 0 : feeEl.valueAsNumber,legs};
     return validClosedStrategy(s) && Number.isFinite(realized(s)) ? s : null;
   }
   function preview(){
     const s = readDraft();
-    $('#ledgerPreview').innerHTML = s ? `سود و زیان نهایی استراتژی: <b>${money(realized(s))} ریال</b>${returns(s)}` : 'قیمت‌ها، تعداد و تاریخ‌ها را بررسی کنید. سررسید باید بعد از ورود و سرمایهٔ مبنا مثبت باشد.';
+    $('#ledgerPreview').innerHTML = s ? `سود و زیان نهایی استراتژی: <b>${money(realized(s))} ریال</b> · تاریخ بسته شدن: <b dir="ltr">${escapeHtml(closeDateOf(s))}</b>${returns(s)}` : 'قیمت‌ها، تعداد و تاریخ‌ها (از جمله تاریخ بسته شدن) را بررسی کنید. سررسید باید بعد از ورود و سرمایهٔ مبنا مثبت باشد.';
   }
   select.addEventListener('change', selection);
   $('#ledgerOpen').addEventListener('toggle', () => { if ($('#ledgerOpen').open) marks(); });
@@ -119,6 +135,10 @@ const positionLedger = (() => {
     $('#ledgerFrom').value = record?.from ?? unanimous(draft.map(p => p.investmentDate));
     $('#ledgerTo').value = record?.to ?? unanimous(draft.filter(p => p.type !== 'underlying').map(p => p.expiryStr || state.options.find(o => o.sym === p.sym)?.expiryStr));
     $('#ledgerCapital').value = record?.capital ?? (draft.every(p => p.direction === 'buy') ? draft.reduce((a,p) => a+p.qty*p.avgPremium,0) || '' : '');
+    $('#ledgerCloseDate').value = record?.closeDate ?? todayJalaliStr();
+    const nameRow = $('#ledgerNameRow');
+    if (nameRow) nameRow.hidden = !record;
+    if (record) $('#ledgerName').value = record.name;
     $('#ledgerTitle').textContent = record ? 'ویرایش: ' + record.name : 'بستن استراتژی: ' + select.value;
     const input = (key,val,label) => `<input data-${key} type="number" required min="0" step="any" value="${val == null?'':Number(val)}" aria-label="${label}">`;
     $('#ledgerInputs').innerHTML = table([...headers,'آخرین قیمت بازار','قیمت واقعی خروج (ریال)'],draft.map(p => [...cells(p).slice(0,2),input('qty',p.qty,'تعداد'),input('entry',p.avgPremium,'قیمت ورود'),money(mark(p)),input('exit',record?p.exitPrice:null,'قیمت خروج')]));
@@ -126,7 +146,10 @@ const positionLedger = (() => {
   }
   $('#ledgerStart').addEventListener('click', () => openForm(null));
   $('#ledgerHistory').addEventListener('click', e => {
-    const btn = e.target.closest('[data-ledger-edit]'); if (btn) openForm(state.closedStrategies[+btn.dataset.ledgerEdit]);
+    const btn = e.target.closest('[data-ledger-edit]');
+    if (!btn) return;
+    e.preventDefault(); // جلوگیری از باز/بسته‌شدن details هنگام کلیک روی دکمهٔ ویرایش
+    openForm(state.closedStrategies[+btn.dataset.ledgerEdit]);
   });
   $('#ledgerCancel').addEventListener('click', () => dialog.close());
   dialog.addEventListener('close', () => { draft = []; });
