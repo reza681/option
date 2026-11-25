@@ -609,6 +609,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     if (view === 'coveredcall') renderCoveredCall();
     if (view === 'marketmap'){ __mmRetry = 0; setTimeout(renderMarketMap, 0); }
     if (view === 'main' && state.report) setTimeout(() => drawChart(state.report), 60);
+    if (view === 'ledger') renderPositionLedger();
     if (view === 'report') renderReportPanel();
     if (view === 'calculations') renderCalculations();
     if (view === 'strategytest') renderStrategyTest();
