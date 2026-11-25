@@ -3,7 +3,9 @@
    ============================================================ */
 (function loadSavedPositions(){
   try {
-    const s = JSON.parse(localStorage.getItem('savedPositions') || '[]');
+    const stored = JSON.parse(localStorage.getItem('savedPositions') || '[]');
+    const s = Array.isArray(stored) ? stored : stored.positions;
+    state.closedStrategies = stored.closedStrategies || [];
     if (Array.isArray(s)) {
       state.savedPositions = s.map(p => {
         if (!p.id) p.id = 'rp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
@@ -14,6 +16,7 @@
       }).filter(p => p && p.id);
     }
   } catch(e){}
+  if (!Array.isArray(state.closedStrategies)) state.closedStrategies = [];
   if (!Array.isArray(state.savedPositions)) state.savedPositions = [];
   if (state.rpSelectedStrategy === undefined) state.rpSelectedStrategy = 'all';
   syncStrategyNames();
@@ -62,8 +65,12 @@ let __rpLastRows = null;
 let __rpLastFileSaveAt = null;
 let __rpLastFileSaveName = null;
 
+// One localStorage write commits both the open book and the archive.
+function persistPositionBook(positions, closedStrategies){
+  localStorage.setItem('savedPositions', JSON.stringify({positions, closedStrategies}));
+}
 function saveSavedPositions(){
-  try { localStorage.setItem('savedPositions', JSON.stringify(state.savedPositions)); } catch(e){}
+  try { persistPositionBook(state.savedPositions, state.closedStrategies); } catch(e){ alert('ذخیرهٔ موقعیت‌ها در این مرورگر انجام نشد. از گزارش فایل پشتیبان بگیرید.'); }
 }
 
 window.moveRpRow = function(id, dir) {
@@ -94,13 +101,14 @@ function rpUpdateFileStatus() {
 }
 
 async function rpSaveToFile() {
-  if (!state.savedPositions || !state.savedPositions.length) {
+  if (!state.savedPositions.length && !state.closedStrategies.length) {
     alert('موقعیتی برای ذخیره وجود ندارد. ابتدا موقعیت اضافه کنید.');
     return;
   }
   const payload = {
     app: 'option-strategy-panel',
-    version: 3,
+    version: 4,
+    closedStrategies: state.closedStrategies,
     savedAt: new Date().toISOString(),
     count: state.savedPositions.length,
     strategyNames: state.strategyNames,
@@ -165,14 +173,17 @@ function rpProcessLoadedFile(file) {
         return p;
       }).filter(p => p && p.id);
       
-      if (!positions.length) { alert('فایل خالی است.'); return; }
-      if (state.savedPositions.length > 0 && !confirm(`فایل شامل ${positions.length} موقعیت است. جایگزین شوند؟`)) return;
-      
+      const hasArchive = Object.hasOwn(data, 'closedStrategies');
+      const archive = hasArchive ? data.closedStrategies : state.closedStrategies;
+      if (hasArchive && !(Array.isArray(archive) && archive.every(validClosedStrategy))) throw new Error('ساختار تاریخچهٔ بسته‌شده معتبر نیست.');
+      if (!positions.length && !(hasArchive && archive.length)) { alert('فایل خالی است.'); return; }
+      if ((state.savedPositions.length || state.closedStrategies.length) && !confirm(hasArchive ? 'موقعیت‌های باز و تاریخچهٔ بسته‌شده با محتوای فایل جایگزین شوند؟' : 'موقعیت‌های باز با فایل جایگزین شوند؟ تاریخچهٔ بسته‌شده حفظ می‌شود.')) return;
+      persistPositionBook(positions, archive);
+      state.closedStrategies = archive;
       state.savedPositions = positions;
       syncStrategyNames();
-      saveSavedPositions();
       renderReportPanel();
-      alert(`✅ ${positions.length} موقعیت بارگذاری شد.`);
+      alert(`✅ موقعیت‌های باز: ${positions.length} | استراتژی‌های بسته‌شده: ${archive.length}`);
     } catch(err) {
       alert('خطا در خواندن فایل: ' + err.message);
     }
