@@ -116,15 +116,18 @@ async function rpSaveToFile() {
     alert('موقعیتی برای ذخیره وجود ندارد. ابتدا موقعیت اضافه کنید.');
     return;
   }
+  const closedCount = (state.closedStrategies || []).length;
   const payload = {
     app: 'option-strategy-panel',
-    version: 4,
+    version: 5,
     closedStrategies: state.closedStrategies,
     savedAt: new Date().toISOString(),
     count: state.savedPositions.length,
+    closedCount: closedCount,
     strategyNames: state.strategyNames,
     positions: state.savedPositions
   };
+  const summary = `موقعیت‌های باز: ${state.savedPositions.length} | استراتژی‌های بسته‌شده: ${closedCount}`;
   const json = JSON.stringify(payload, null, 2);
   const ts = new Date().toISOString().slice(0,19).replace(/[:T]/g,'-');
   const suggestedName = 'positions-' + ts + '.json';
@@ -141,7 +144,7 @@ async function rpSaveToFile() {
       __rpLastFileSaveAt = Date.now();
       __rpLastFileSaveName = handle.name;
       rpUpdateFileStatus();
-      alert('✅ فایل با موفقیت ذخیره شد:\n' + handle.name);
+      alert('✅ فایل با موفقیت ذخیره شد:\n' + handle.name + '\n' + summary);
       return;
     } catch(e) {
       if (e.name === 'AbortError') return;
@@ -162,7 +165,7 @@ async function rpSaveToFile() {
     __rpLastFileSaveAt = Date.now();
     __rpLastFileSaveName = suggestedName;
     rpUpdateFileStatus();
-    alert('فایل در پوشه Downloads ذخیره شد.');
+    alert('فایل در پوشه Downloads ذخیره شد.\n' + summary);
   } catch(e) {
     alert('خطا در ذخیره فایل: ' + e.message);
   }
@@ -1152,9 +1155,61 @@ async function exportRpPdf(){
   } catch(err){ alert('خطا: ' + err.message); } finally { if (btn){ btn.disabled = false; btn.textContent = old; } }
 }
 
+/* ساخت دادهٔ شیت «بسته‌شده» برای خروجی اکسل: کلیهٔ دیتای استراتژی‌های بسته‌شده + تاریخ بسته شدن */
+function rpClosedSheetAoa(){
+  const dayDiff = (from, to) => {
+    const a = parseJalaliDate(from), b = parseJalaliDate(to);
+    if (!a || !b) return null;
+    const g1 = jalaliToGregorian(...a), g2 = jalaliToGregorian(...b);
+    const d = (Date.UTC(g2[0], g2[1]-1, g2[2]) - Date.UTC(g1[0], g1[1]-1, g1[2])) / 86400000;
+    return d > 0 ? d : null;
+  };
+  const hdr = ['#','نام استراتژی','تاریخ بسته شدن','تاریخ ورود','سررسید','نوع','نماد','جهت','تعداد','قیمت ورود','قیمت خروج','سود/زیان پا (پیش از کارمزد)','کارمزد کل استراتژی','سرمایه مبنا','سود/زیان نهایی استراتژی','بازده دوره','بازده سالانه','نرخ سالانه‌سازی'];
+  const aoa = [hdr];
+  let n = 0, totalNet = 0;
+  (state.closedStrategies || []).forEach(s => {
+    const mode = ['linear','compound'].includes(s.rateMode) ? s.rateMode : getAnnualMode();
+    const legPnls = s.legs.map(p => ledgerPnl(p, p.exitPrice));
+    const legTotal = legPnls.includes(null) ? null : legPnls.reduce((a,b) => a+b, 0);
+    const net = (legTotal === null) ? null : legTotal - s.fees;
+    const pct = (net !== null && Number.isFinite(s.capital) && s.capital > 0) ? (net * 100 / s.capital) : null;
+    const days = dayDiff(s.from, s.to);
+    const ann = pct !== null ? annualizePct(pct, days, mode) : null;
+    if (net !== null && Number.isFinite(net)) totalNet += net;
+    s.legs.forEach((p, i) => {
+      n++;
+      aoa.push([
+        n,
+        s.name || '—',
+        s.closeDate || isoToJalaliStr(s.closedAt),
+        s.from || '',
+        s.to || '',
+        (p.type === 'underlying') ? 'سهم' : 'اختیار',
+        p.sym || '',
+        p.direction === 'sell' ? 'فروش' : 'خرید',
+        p.qty,
+        p.avgPremium,
+        p.exitPrice,
+        (legPnls[i] !== null && legPnls[i] !== undefined) ? legPnls[i] : '',
+        i === 0 ? (s.fees || 0) : '',
+        (i === 0 && Number.isFinite(s.capital) && s.capital > 0) ? s.capital : '',
+        i === 0 ? (net !== null ? net : '') : '',
+        i === 0 ? (pct !== null ? pct/100 : '') : '',
+        i === 0 ? (ann !== null ? ann/100 : '') : '',
+        i === 0 ? (mode === 'linear' ? 'خطی' : 'مرکب') : ''
+      ]);
+    });
+  });
+  aoa.push(['جمع کل نهایی (پس از کارمزد)', '', '', '', '', '', '', '', '', '', '', '', '', '', totalNet, '', '', '']);
+  aoa.push([]);
+  aoa.push(['توجه: ستون‌های کارمزد، سرمایه مبنا، سود/زیان نهایی، بازده و نرخ سالانه‌سازی فقط در ردیف اول هر استراتژی درج می‌شوند.']);
+  return aoa;
+}
+
 function exportRpExcel(){
+  const closedList = Array.isArray(state.closedStrategies) ? state.closedStrategies : [];
   const rows = __rpLastRows;
-  if (!rows || !rows.length){ alert('داده‌ای نیست.'); return; }
+  if ((!rows || !rows.length) && !closedList.length){ alert('داده‌ای نیست.'); return; }
   if (!window.XLSX){ alert('کتابخانه اکسل آماده نیست.'); return; }
   const btn = document.getElementById('rpExportExcelBtn');
   const old = btn ? btn.textContent : '';
@@ -1166,7 +1221,7 @@ function exportRpExcel(){
     let sumAnnOffsetW = 0, totalAnnOffsetW = 0;
     const data = [];
     
-    rows.forEach(r => {
+    (rows || []).forEach(r => {
       if (r.missing) return;
       const type = r.isUnderlying ? 'سهم' : (r.type === 'call' ? 'Call' : 'Put');
       const dir = r.direction === 'sell' ? 'فروش' : 'خرید';
@@ -1217,13 +1272,23 @@ function exportRpExcel(){
     [11,15,16,18].forEach(c => { for(let r=1; r<=rng.e.r; r++){ const ad = XLSX.utils.encode_cell({r,c}); if(ws[ad] && ws[ad].t==='n') ws[ad].z='0.0%'; }});
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, 'Positions');
+    /* شیت دوم: کلیهٔ دیتای موقعیت‌های بسته‌شده */
+    if (closedList.length){
+      const cAoa = rpClosedSheetAoa();
+      const ws2 = XLSX.utils.aoa_to_sheet(cAoa);
+      ws2['!cols'] = [{wch:5},{wch:18},{wch:13},{wch:13},{wch:13},{wch:8},{wch:14},{wch:8},{wch:10},{wch:12},{wch:12},{wch:16},{wch:14},{wch:14},{wch:16},{wch:11},{wch:11},{wch:12}];
+      const rng2 = XLSX.utils.decode_range(ws2['!ref']);
+      [15,16].forEach(c => { for(let r=1; r<=rng2.e.r; r++){ const ad = XLSX.utils.encode_cell({r,c}); if(ws2[ad] && ws2[ad].t==='n') ws2[ad].z='0.0%'; }});
+      XLSX.utils.book_append_sheet(wb, ws2, 'بسته‌شده');
+    }
     XLSX.writeFile(wb, 'positions-' + new Date().toISOString().slice(0,10) + '.xlsx');
   } catch(err){ alert('خطا: ' + err.message); } finally { if (btn){ btn.disabled = false; btn.textContent = old; } }
 }
 
 function printRpTableOnly() {
-  const rows = __rpLastRows;
-  if (!rows || !rows.length) { alert('داده‌ای نیست.'); return; }
+  const rows = __rpLastRows || [];
+  const closedPrTop = Array.isArray(state.closedStrategies) ? state.closedStrategies : [];
+  if (!rows.length && !closedPrTop.length) { alert('داده‌ای نیست.'); return; }
   const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
   let totalQty = 0, totalAmount = 0, totalClose = 0, totalPnl = 0;
@@ -1498,6 +1563,64 @@ function printRpTableOnly() {
   const dateStr = now.toLocaleDateString('fa-IR');
   const stratName = state.rpSelectedStrategy === 'all' ? 'کل پرتفوی' : `استراتژی ${state.rpSelectedStrategy}`;
 
+  /* بخش «موقعیت‌های بسته‌شده» — کلیهٔ دیتا به‌همراه تاریخ بسته شدن */
+  let closedHtml = '';
+  const closedPr = Array.isArray(state.closedStrategies) ? state.closedStrategies : [];
+  if (closedPr.length){
+    const dayDiffPr = (from, to) => {
+      const a = parseJalaliDate(from), b = parseJalaliDate(to);
+      if (!a || !b) return null;
+      const g1 = jalaliToGregorian(...a), g2 = jalaliToGregorian(...b);
+      const d = (Date.UTC(g2[0],g2[1]-1,g2[2]) - Date.UTC(g1[0],g1[1]-1,g1[2])) / 86400000;
+      return d > 0 ? d : null;
+    };
+    let cRows = '', cTotal = 0, n = 0;
+    closedPr.forEach(s => {
+      const mode = ['linear','compound'].includes(s.rateMode) ? s.rateMode : getAnnualMode();
+      const legPnls = s.legs.map(p => ledgerPnl(p, p.exitPrice));
+      const legTotal = legPnls.includes(null) ? null : legPnls.reduce((a,b) => a+b, 0);
+      const net = (legTotal === null) ? null : legTotal - s.fees;
+      const pct = (net !== null && Number.isFinite(s.capital) && s.capital > 0) ? (net * 100 / s.capital) : null;
+      const days = dayDiffPr(s.from, s.to);
+      const ann = pct !== null ? annualizePct(pct, days, mode) : null;
+      if (net !== null && Number.isFinite(net)) cTotal += net;
+      s.legs.forEach((p, i) => {
+        n++;
+        const hasLp = (legPnls[i] !== null && legPnls[i] !== undefined);
+        const lpCls = hasLp ? (legPnls[i] >= 0 ? 'pos' : 'neg') : '';
+        cRows += `<tr>
+          <td class="num">${n}</td>
+          <td class="wrap">${esc(s.name || '—')}</td>
+          <td class="wrap"><b>${esc(s.closeDate || isoToJalaliStr(s.closedAt))}</b></td>
+          <td class="wrap">${esc(s.from || '—')}</td>
+          <td class="wrap">${esc(s.to || '—')}</td>
+          <td>${(p.type === 'underlying') ? 'سهم' : 'اختیار'}</td>
+          <td class="sym">${esc(p.sym)}</td>
+          <td><span class="tag ${p.direction === 'sell' ? 'sell' : 'buy'}">${p.direction === 'sell' ? 'فروش' : 'خرید'}</span></td>
+          <td class="num">${fmt0(p.qty)}</td>
+          <td class="num">${fmt0(p.avgPremium)}</td>
+          <td class="num">${fmt0(p.exitPrice)}</td>
+          <td class="num ${lpCls}">${hasLp ? fmt0(legPnls[i]) : '—'}</td>
+          ${i === 0 ? `<td class="num">${fmt0(s.fees || 0)}</td><td class="num">${(Number.isFinite(s.capital) && s.capital > 0) ? fmt0(s.capital) : '—'}</td><td class="num ${net !== null && net >= 0 ? 'pos' : 'neg'}"><b>${net !== null ? fmt0(net) : '—'}</b></td><td class="num">${pct !== null ? pct.toFixed(2) + '%' : '—'}</td><td class="num">${ann !== null ? ann.toFixed(2) + '%' : '—'}</td>` : '<td colspan="5"></td>'}
+        </tr>`;
+      });
+    });
+    closedHtml = `
+    <div class="sensitivity-table-wrap">
+      <h2>موقعیت‌های بسته‌شده (${closedPr.length.toLocaleString('fa-IR')} استراتژی)</h2>
+      <div class="note">کلیهٔ موقعیت‌های بسته‌شده به‌همراه تاریخ بسته شدن، قیمت ورود/خروج و سود و زیان تحقق‌یافته (پس از کسر کارمزد). ستون‌های کارمزد تا بازده سالانه فقط در ردیف اول هر استراتژی درج می‌شوند.</div>
+      <table>
+        <thead><tr>
+          <th>#</th><th>نام استراتژی</th><th>تاریخ بسته شدن</th><th>تاریخ ورود</th><th>سررسید</th><th>نوع</th><th>نماد</th><th>جهت</th><th>تعداد</th><th>قیمت ورود</th><th>قیمت خروج</th><th>سود/زیان پا</th><th>کارمزد</th><th>سرمایه مبنا</th><th>سود/زیان نهایی</th><th>بازده دوره</th><th>بازده سالانه</th>
+        </tr></thead>
+        <tbody>
+          ${cRows}
+          <tr class="total-row"><td colspan="14" style="text-align:right;padding-right:12px">جمع نهایی همهٔ استراتژی‌های بسته‌شده (پس از کارمزد)</td><td class="num ${cTotal >= 0 ? 'pos' : 'neg'}"><b>${fmt0(cTotal)}</b></td><td colspan="2"></td></tr>
+        </tbody>
+      </table>
+    </div>`;
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
@@ -1753,6 +1876,8 @@ function printRpTableOnly() {
       </table>
     </div>
     ` : ''}
+
+    ${closedHtml}
   </div>
 
   <button class="print-btn" onclick="window.print()">🖨 چاپ / ذخیره به PDF</button>
