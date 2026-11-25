@@ -158,6 +158,7 @@ async function fetchMarketData(){
   if (!$('[data-panel="watchlist"]').classList.contains('hidden')) renderWatchlist();
   if (!$('[data-panel="marketmap"]').classList.contains('hidden')) renderMarketMap();
   if (!$('[data-panel="coveredcall"]').classList.contains('hidden')) renderCoveredCall();
+  if (!$('[data-panel="ledger"]').classList.contains('hidden')) renderPositionLedger();
   if (!$('[data-panel="report"]').classList.contains('hidden')) renderReportPanel();
   if (!$('[data-panel="calculations"]').classList.contains('hidden')) renderCalculations();
   if (!$('[data-panel="strategytest"]').classList.contains('hidden')) renderStrategyTest();
