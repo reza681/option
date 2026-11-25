@@ -1,5 +1,10 @@
-#rollDetails{box-sizing:border-box;width:min(760px,94vw);max-height:85vh;overflow:auto;margin:auto;padding:clamp(16px,3vw,32px);border:1px solid var(--line);border-radius:var(--radius);background:var(--card);color:var(--ink);line-height:1.9}
-#rollDetails::backdrop{background:rgba(15,23,42,.65)}
+#ledgerDialog,#rollDetails{box-sizing:border-box;width:min(760px,94vw);max-height:85vh;overflow:auto;margin:auto;padding:clamp(16px,3vw,32px);border:1px solid var(--line);border-radius:var(--radius);background:var(--card);color:var(--ink);line-height:1.9}
+#ledgerDialog::backdrop,#rollDetails::backdrop{background:rgba(15,23,42,.65)}
+[data-panel="ledger"] summary{cursor:pointer;font-weight:700}
+[data-panel="ledger"] details + details{margin-block-start:12px}
+#ledgerDialog .table-wrap{margin-block:12px}
+#ledgerDialog input{width:10em}
+#ledgerDialog .actions-row{display:flex;gap:8px;flex-wrap:wrap}
 #rollDetails header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 #rollDetails section{margin-top:12px;padding:12px 16px;background:var(--soft);border:1px solid var(--line);border-radius:var(--radius-sm)}
 #rollDetails h3,#rollDetails p{margin:.3em 0}
