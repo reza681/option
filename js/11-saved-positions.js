@@ -22,8 +22,18 @@
   syncStrategyNames();
 })();
 
+// Both the report and the closing ledger group the actual open legs, not quotes or cached names.
+function rpOpenStrategies(){
+  const groups = new Map();
+  for (const p of state.savedPositions){
+    const name = String(p.strategyName || 'بدون نام');
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(p);
+  }
+  return new Map([...groups].sort(([a], [b]) => a.localeCompare(b, 'fa')));
+}
 function syncStrategyNames(){
-  const names = [...new Set((state.savedPositions || []).map(p => p.strategyName || 'بدون نام'))];
+  const names = [...rpOpenStrategies().keys()];
   state.strategyNames = names;
   try { localStorage.setItem('savedStrategyNames', JSON.stringify(state.strategyNames)); } catch(e){}
   return names;
@@ -71,6 +81,7 @@ function persistPositionBook(positions, closedStrategies){
 }
 function saveSavedPositions(){
   try { persistPositionBook(state.savedPositions, state.closedStrategies); } catch(e){ alert('ذخیرهٔ موقعیت‌ها در این مرورگر انجام نشد. از گزارش فایل پشتیبان بگیرید.'); }
+  document.dispatchEvent(new Event('report-positions-changed'));
 }
 
 window.moveRpRow = function(id, dir) {
@@ -182,6 +193,7 @@ function rpProcessLoadedFile(file) {
       state.closedStrategies = archive;
       state.savedPositions = positions;
       syncStrategyNames();
+      document.dispatchEvent(new Event('report-positions-changed'));
       renderReportPanel();
       alert(`✅ موقعیت‌های باز: ${positions.length} | استراتژی‌های بسته‌شده: ${archive.length}`);
     } catch(err) {
@@ -619,6 +631,16 @@ function renderReportPanel(){
 
   rpUpdateFileStatus();
 
+  const groups = rpOpenStrategies(), names = [...groups.keys()];
+  if (!groups.has(state.rpSelectedStrategy)) state.rpSelectedStrategy = 'all';
+  const groupSel = document.getElementById('rpGroupByStrategy');
+  if (groupSel) {
+    groupSel.replaceChildren(new Option('همه استراتژی‌ها (کل پرتفوی)', 'all'), ...names.map(s => new Option(s, s)));
+    groupSel.value = state.rpSelectedStrategy;
+  }
+  const datalist = document.getElementById('rpStrategyNameList');
+  if (datalist) datalist.replaceChildren(...names.map(s => new Option(s, s)));
+
   if (!state.options || !state.options.length){
     addSel.innerHTML = '<option value="">— ابتدا داده بازار را دریافت کنید —</option>';
     tbl.innerHTML = '<tbody><tr><td colspan="19" style="text-align:center;padding:36px;color:#64748b">ابتدا از بخش «تحلیل استراتژی» دکمه دریافت داده را بزنید.</td></tr></tbody>';
@@ -629,31 +651,7 @@ function renderReportPanel(){
     return;
   }
 
-  if (state.rpSelectedStrategy === undefined) state.rpSelectedStrategy = 'all';
-  
-  const uniqueStrategies = [...new Set(state.savedPositions.map(p => p.strategyName || 'بدون نام'))].sort((a,b)=>a.localeCompare(b,'fa'));
-  
-  const groupSel = document.getElementById('rpGroupByStrategy');
-  if (groupSel) {
-    const curVal = state.rpSelectedStrategy;
-    if (groupSel.options.length - 1 !== uniqueStrategies.length) {
-      groupSel.innerHTML = '<option value="all">همه استراتژی‌ها (کل پرتفوی)</option>' +
-        uniqueStrategies.map(s => `<option value="${s}">${s}</option>`).join('');
-    }
-    groupSel.value = uniqueStrategies.includes(curVal) ? curVal : 'all';
-    if (groupSel.value !== curVal) state.rpSelectedStrategy = groupSel.value;
-  }
-
-  const datalist = document.getElementById('rpStrategyNameList');
-  if (datalist) {
-    datalist.innerHTML = uniqueStrategies.map(s => `<option value="${s}">`).join('');
-  }
-
-  // ⬇⬇⬇ فیلتر کردن دقیق موقعیت‌ها بر اساس استراتژی انتخاب شده ⬇⬇⬇
-  const filteredPositions = state.savedPositions.filter(p => {
-    if (state.rpSelectedStrategy === 'all') return true;
-    return (p.strategyName || 'بدون نام') === state.rpSelectedStrategy;
-  });
+  const filteredPositions = state.rpSelectedStrategy === 'all' ? state.savedPositions : groups.get(state.rpSelectedStrategy);
 
   populateRpSymbols();
   
@@ -1792,8 +1790,7 @@ function printRpTableOnly() {
     if (addNewBtn) addNewBtn.addEventListener('click', () => {
       const name = prompt('نام استراتژی جدید را وارد کنید:', 'استراتژی ' + (state.savedPositions.length + 1));
       if (!name) return;
-      const visibleNames = [...new Set((state.savedPositions || []).map(p => p.strategyName || 'بدون نام'))];
-      if (visibleNames.includes(name)) { alert('این نام قبلا وجود دارد.'); return; }
+      if (rpOpenStrategies().has(name)) { alert('این نام قبلا وجود دارد.'); return; }
       
       state.savedPositions.push({
         id: 'rp_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
