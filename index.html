@@ -56,6 +56,7 @@
       <button class="nav-item" data-view="marketmap"><span class="ico">🗺</span> نقشه بازار اختیار</button>
       <button class="nav-item" data-view="coveredcall"><span class="ico">🛡</span> استراتژی کاورد کال <span class="badge" id="ccBadge">0</span></button>
       <button class="nav-item" data-view="report"><span class="ico">📋</span> گزارش موقعیت‌ها <span class="badge" id="rpBadge">0</span></button>
+      <button class="nav-item" data-view="ledger"><span class="ico">📒</span> موقعیت‌های بسته‌شده</button>
       <!-- منوی تست استراتژی برگشت داده شد -->
       <button class="nav-item" data-view="strategytest"><span class="ico">🧪</span> تست استراتژی</button>
       <button class="nav-item" data-view="tilltomorrow"><span class="ico">🎯</span> استراتژی تا فردا</button>
@@ -335,6 +336,22 @@
           </div>
         </div>
       </section>
+    </div>
+
+    <div class="app hidden" data-panel="ledger">
+      <header class="topbar"><div class="logo">📒</div><div><h1>موقعیت‌های بسته‌شده</h1><div class="sub">ثبت در دفتر معاملات شخصی؛ این عملیات سفارشی به کارگزاری نمی‌فرستد.</div></div></header>
+      <section class="card"><div class="card-head"><h2>بستن استراتژی</h2></div><div class="card-body">
+        <div class="wl-controls"><label>استراتژی‌های باز <select id="ledgerStrategy"></select></label><button type="button" class="primary" id="ledgerStart">بستن استراتژی…</button></div>
+        <p class="hint" id="ledgerSelection"></p><p role="status" id="ledgerMessage"></p>
+      </div></section>
+      <section class="card"><div class="card-head"><h2>تاریخچهٔ سود و زیان تحقق‌یافته</h2></div><div class="card-body" id="ledgerHistory"></div></section>
+      <section class="card"><details class="card-body" id="ledgerOpen"><summary>نمایش سود و زیان موقعیت‌های باز</summary><div id="ledgerMarks"></div></details></section>
+      <dialog id="ledgerDialog" aria-labelledby="ledgerTitle"><form id="ledgerForm">
+        <h2 id="ledgerTitle">ثبت قیمت‌های خروج</h2><p>قیمت واقعی خروج هر واحد را به ریال وارد کنید. برای اختیار بی‌ارزش می‌توانید صفر ثبت کنید.</p>
+        <div class="table-wrap" id="ledgerInputs"></div>
+        <label>مجموع کارمزد ورود و خروج استراتژی (ریال، اختیاری) <input id="ledgerFees" type="number" min="0" step="any" placeholder="۰"></label>
+        <p id="ledgerPreview" aria-live="polite"></p><div class="actions-row"><button type="submit" class="primary">تأیید و ثبت بستن استراتژی</button><button type="button" id="ledgerCancel">انصراف</button></div>
+      </form></dialog>
     </div>
 
     <!-- ========== پنل گزارش موقعیت‌ها ========== -->
@@ -646,6 +663,7 @@
 <script src="js/09-till-tomorrow.js"></script>
 <script src="js/10-manual-calc.js"></script>
 <script src="js/11-saved-positions.js"></script>
+<script src="js/15-position-ledger.js"></script>
 <script src="js/13-strategy-test.js"></script>
 </body>
 </html>
