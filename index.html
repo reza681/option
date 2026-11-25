@@ -344,6 +344,11 @@
         <div class="wl-controls"><label>استراتژی‌های باز <select id="ledgerStrategy"></select></label><button type="button" class="primary" id="ledgerStart">بستن استراتژی…</button></div>
         <p class="hint" id="ledgerSelection"></p><p role="status" id="ledgerMessage"></p>
       </div></section>
+      <section class="card"><div class="card-head"><h2>اشتراک‌گذاری گزارش موقعیت‌ها</h2></div><div class="card-body">
+        <p>فایل شامل همهٔ موقعیت‌های باز، آخرین قیمت‌های موجود و تاریخچهٔ بسته‌شده است. فقط برای فرد مورد اعتماد بفرستید.</p>
+        <button type="button" id="ledgerShare">ذخیرهٔ فایل برای ارسال</button> <button type="button" id="ledgerView">مشاهدهٔ فایل دریافتی</button><input type="file" id="ledgerFile" accept=".json,application/json" hidden>
+        <dialog id="ledgerSharedDialog" aria-labelledby="ledgerSharedTitle"><form method="dialog"><button>بستن نمایش</button></form><h2 id="ledgerSharedTitle">گزارش دریافتی (فقط خواندنی)</h2><p id="ledgerStamp"></p><h3>موقعیت‌های باز</h3><div id="ledgerSharedMarks"></div><h3>تاریخچهٔ بسته‌شده</h3><div id="ledgerSharedHistory"></div></dialog>
+      </div></section>
       <section class="card"><div class="card-head"><h2>تاریخچهٔ سود و زیان تحقق‌یافته</h2></div><div class="card-body" id="ledgerHistory"></div></section>
       <section class="card"><details class="card-body" id="ledgerOpen"><summary>نمایش سود و زیان موقعیت‌های باز</summary><div id="ledgerMarks"></div></details></section>
       <dialog id="ledgerDialog" aria-labelledby="ledgerTitle"><form id="ledgerForm">
