@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fa" dir="rtl" data-theme="blue">
 <head>
 <meta charset="utf-8" />
@@ -52,6 +52,7 @@
     <nav class="sidebar-nav">
       <button class="nav-item active" data-view="main"><span class="ico">📈</span> تحلیل استراتژی</button>
       <button class="nav-item" data-view="watchlist"><span class="ico">👁</span> دیده‌بان اختیار <span class="badge" id="wlBadge">0</span></button>
+      <button class="nav-item" data-view="rollwatch"><span class="ico">⇄</span> دیده‌بان جابه‌جایی اختیار</button>
       <button class="nav-item" data-view="marketmap"><span class="ico">🗺</span> نقشه بازار اختیار</button>
       <button class="nav-item" data-view="coveredcall"><span class="ico">🛡</span> استراتژی کاورد کال <span class="badge" id="ccBadge">0</span></button>
       <button class="nav-item" data-view="report"><span class="ico">📋</span> گزارش موقعیت‌ها <span class="badge" id="rpBadge">0</span></button>
@@ -184,6 +185,26 @@
             <table id="watchlistTable"><tbody><tr><td style="text-align:center;padding:30px;color:#64748b">در حال بارگذاری…</td></tr></tbody></table>
           </div>
 
+        </div>
+      </section>
+    </div>
+
+    <div class="app hidden" data-panel="rollwatch">
+      <header class="topbar"><div class="logo">⇄</div><div><h1>دیده‌بان جابه‌جایی اختیار</h1><div class="sub">هر ردیف یک قیمت اعمال و هر ستون یک سررسید است. قیمت‌ها به ریال هستند.</div></div></header>
+      <section class="card">
+        <div class="card-head"><h2>مقایسه قراردادها</h2></div>
+        <div class="card-body">
+          <div class="wl-controls">
+            <label>دارایی پایه <select id="rollAsset"></select></label>
+            <label>نوع اختیار <select id="rollType"><option value="call">اختیار خرید</option><option value="put">اختیار فروش</option></select></label>
+            <label>قیمت نمایشی <select id="rollQuote"><option value="price">مبنای دیده‌بان اختیار</option><option value="last">آخرین معامله</option><option value="close">قیمت پایانی</option></select></label>
+          </div>
+          <dialog id="rollDetails" aria-labelledby="rollDetailsTitle" dir="rtl">
+            <header><h2 id="rollDetailsTitle"></h2><form method="dialog"><button autofocus>بستن</button></form></header>
+            <div id="rollDetailsBody"></div>
+          </dialog>
+          <p id="rollHint" role="status"></p>
+          <div class="table-wrap" style="max-height:65vh"><table id="rollTable"></table></div>
         </div>
       </section>
     </div>
@@ -618,6 +639,7 @@
 <script src="js/03-strategy.js"></script>
 <script src="js/04-chart-and-shell.js"></script>
 <script src="js/05-watchlist.js"></script>
+<script src="js/14-roll-watch.js"></script>
 <script src="js/06-marketmap-themes.js"></script>
 <script src="js/07-popover.js"></script>
 <script src="js/08-covered-call.js"></script>
