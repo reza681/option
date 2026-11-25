@@ -95,6 +95,34 @@ function jalaliToGregorian(jy, jm, jd){
   for (; gm <= 12; gm++){ if (gd <= sal[gm]) break; gd -= sal[gm]; }
   return [gy, gm, gd];
 }
+/* تبدیل معکوس (میلادی → جلالی) — عکسِ jalaliToGregorian بالا */
+function gregorianToJalali(gy, gm, gd){
+  const gdm = [0,31,59,90,120,151,181,212,243,273,304,334];
+  const gy2 = (gm > 2) ? (gy + 1) : gy;
+  let days = 355666 + (365 * gy) + Math.floor((gy2 + 3) / 4) - Math.floor((gy2 + 99) / 100)
+           + Math.floor((gy2 + 399) / 400) + gd + gdm[gm - 1];
+  let jy = -1595 + 33 * Math.floor(days / 12053);
+  days %= 12053;
+  jy += 4 * Math.floor(days / 1461);
+  days %= 1461;
+  if (days > 365) { jy += Math.floor((days - 1) / 365); days = (days - 1) % 365; }
+  if (days < 186) { return [jy, 1 + Math.floor(days / 31), 1 + (days % 31)]; }
+  return [jy, 7 + Math.floor((days - 186) / 30), 1 + ((days - 186) % 30)];
+}
+function jalaliStr(jy, jm, jd){
+  return jy + '/' + String(jm).padStart(2, '0') + '/' + String(jd).padStart(2, '0');
+}
+/* تاریخ شمسی امروز به شکل YYYY/MM/DD */
+function todayJalaliStr(){
+  const t = new Date();
+  return jalaliStr(...gregorianToJalali(t.getFullYear(), t.getMonth() + 1, t.getDate()));
+}
+/* تبدیل تاریخ ISO (مثل closedAt) به رشتهٔ شمسی YYYY/MM/DD */
+function isoToJalaliStr(iso){
+  const d = new Date(iso);
+  if (isNaN(d)) return '';
+  return jalaliStr(...gregorianToJalali(d.getFullYear(), d.getMonth() + 1, d.getDate()));
+}
 function parseJalaliDate(s){
   if (!s) return null;
   s = String(s).trim().replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
