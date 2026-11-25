@@ -355,7 +355,8 @@
         <h2 id="ledgerTitle">ثبت قیمت‌های خروج</h2><p>قیمت واقعی خروج هر واحد را به ریال وارد کنید. برای اختیار بی‌ارزش می‌توانید صفر ثبت کنید.</p>
         <div class="table-wrap" id="ledgerInputs"></div>
         <label>مجموع کارمزد ورود و خروج استراتژی (ریال، اختیاری) <input id="ledgerFees" type="number" min="0" step="any" placeholder="۰"></label>
-        <p id="ledgerPreview" aria-live="polite"></p><div class="actions-row"><button type="submit" class="primary">تأیید و ثبت بستن استراتژی</button><button type="button" id="ledgerCancel">انصراف</button></div>
+        <fieldset><legend>بازده از ورود تا سررسید</legend><label>سرمایهٔ درگیر در زمان ورود (ریال) <input id="ledgerCapital" type="number" min="0" step="any"></label> <label>تاریخ ورود (شمسی) <input id="ledgerFrom" dir="ltr" placeholder="۱۴۰۵/۰۱/۱۵"></label> <label>سررسید مبنا (شمسی) <input id="ledgerTo" dir="ltr" placeholder="۱۴۰۵/۰۶/۱۵"></label><p>برای فروش اختیار، وجه تضمین یا سرمایهٔ واقعی درگیر را وارد کنید. برای چند سررسید، پایان دوره را خودتان تعیین کنید. در خروج زودهنگام فرض می‌شود وجه تا سررسید بدون سود مانده است.</p></fieldset>
+        <p id="ledgerPreview" aria-live="polite"></p><div class="actions-row"><button type="submit" class="primary">تأیید و ذخیره</button><button type="button" id="ledgerCancel">انصراف</button></div>
       </form></dialog>
     </div>
 
