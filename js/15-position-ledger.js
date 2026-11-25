@@ -28,28 +28,50 @@ const positionLedger = (() => {
   const cells = p => [escapeHtml(p.sym), p.direction === 'buy' ? 'خرید' : 'فروش', money(+p.qty), money(+p.avgPremium)];
   const total = values => values.includes(null) ? null : values.reduce((a,b) => a+b, 0);
   const realized = s => total(s.legs.map(p => ledgerPnl(p, p.exitPrice))) - s.fees;
-  function history(){
-    const archive = state.closedStrategies;
-    if (!archive.length) { $('#ledgerHistory').textContent = 'هنوز استراتژی بسته‌شده‌ای ثبت نشده است.'; return; }
-    $('#ledgerHistory').innerHTML = `<p>جمع سود و زیان پس از کسر کارمزد ثبت‌شده: <b>${money(total(archive.map(realized)))} ریال</b></p>` + archive.slice().reverse().map(s =>
+  function history(archive = state.closedStrategies, el = $('#ledgerHistory')){
+    if (!archive.length) { el.textContent = 'هنوز استراتژی بسته‌شده‌ای ثبت نشده است.'; return; }
+    el.innerHTML = `<p>جمع سود و زیان پس از کسر کارمزد ثبت‌شده: <b>${money(total(archive.map(realized)))} ریال</b></p>` + archive.slice().reverse().map(s =>
       `<details><summary>${escapeHtml(s.name)} · ${new Date(s.closedAt).toLocaleString('fa-IR')} · ${money(realized(s))} ریال</summary><p>کارمزد ثبت‌شده: ${money(s.fees)} ریال</p>` +
       table([...headers,'قیمت خروج','سود و زیان پیش از کارمزد'], s.legs.map(p => [...cells(p),money(p.exitPrice),money(ledgerPnl(p,p.exitPrice))])) + '</details>').join('');
   }
-  function marks(){
-    const el = $('#ledgerMarks');
-    if (!state.savedPositions.length) { el.textContent = 'موقعیت بازی وجود ندارد.'; return; }
+  function marks(positions = state.savedPositions, priceOf = mark, el = $('#ledgerMarks'), shared = false){
+    if (!positions.length) { el.textContent = 'موقعیت بازی وجود ندارد.'; return; }
     const groups = new Map();
-    for (const p of state.savedPositions){
-      const name = nameOf(p), price = mark(p);
+    for (const p of positions){
+      const name = nameOf(p), price = priceOf(p);
       if (!groups.has(name)) groups.set(name, []);
       groups.get(name).push({p,price,pnl:ledgerPnl(p,price)});
     }
     const all = [...groups.values()].flat(), net = total(all.map(r => r.pnl));
-    el.innerHTML = `<p>جمع سود و زیان باز: <b>${money(net)} ریال</b> (پیش از کارمزد، بر اساس آخرین دادهٔ دریافتی)</p>` +
-      (net === null ? '<p>جمع برای گروهی که قیمت یا اطلاعات ناقص دارد نمایش داده نمی‌شود. برای به‌روز کردن قیمت‌ها، داده‌های بازار را دریافت کنید.</p>' : '') +
+    el.innerHTML = `<p>جمع سود و زیان باز: <b>${money(net)} ریال</b> (پیش از کارمزد، ${shared ? 'بر اساس قیمت‌های داخل فایل' : 'بر اساس آخرین دادهٔ دریافتی'})</p>` +
+      (net === null ? '<p>جمع برای گروهی که قیمت یا اطلاعات ناقص دارد نمایش داده نمی‌شود.</p>' : '') +
       [...groups].map(([name, rows]) => `<details><summary>${escapeHtml(name)} · ${money(total(rows.map(r => r.pnl)))} ریال</summary>` +
         table([...headers,'قیمت بازار','سود و زیان باز'],rows.map(r => [...cells(r.p),money(r.price),money(r.pnl)])) + '</details>').join('');
   }
+  const shareLeg = p => ({sym:p.sym, strategyName:nameOf(p), direction:p.direction, qty:p.qty, avgPremium:p.avgPremium});
+  $('#ledgerShare').addEventListener('click', () => {
+    if (!state.savedPositions.length && !state.closedStrategies.length) return alert('موقعیتی برای ارسال وجود ندارد.');
+    const savedAt = new Date().toISOString();
+    const data = {format:'option-ledger-view', version:1, savedAt,
+      open:state.savedPositions.map(p => ({...shareLeg(p), mark:mark(p)})),
+      closed:state.closedStrategies.map(s => ({name:s.name, closedAt:s.closedAt, fees:s.fees, legs:s.legs.map(p => ({...shareLeg(p), exitPrice:p.exitPrice}))}))};
+    const url = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'}));
+    const a = document.createElement('a'); a.href = url; a.download = 'ledger-view-' + savedAt.slice(0,10) + '.json';
+    document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url),1000);
+  });
+  $('#ledgerView').addEventListener('click', () => $('#ledgerFile').click());
+  $('#ledgerFile').addEventListener('change', async e => {
+    const file = e.target.files[0]; e.target.value = ''; if (!file) return;
+    try {
+      const data = JSON.parse(await file.text());
+      if (data?.format !== 'option-ledger-view' || data.version !== 1 || !Number.isFinite(Date.parse(data.savedAt)) ||
+          !Array.isArray(data.open) || !data.open.every(p => p && typeof p.sym === 'string' && typeof p.strategyName === 'string' && ledgerPnl(p,0) !== null && (p.mark === null || (Number.isFinite(p.mark) && p.mark >= 0))) ||
+          !Array.isArray(data.closed) || !data.closed.every(validClosedStrategy)) throw new Error();
+      marks(data.open,p => p.mark,$('#ledgerSharedMarks'),true); history(data.closed,$('#ledgerSharedHistory'));
+      $('#ledgerStamp').textContent = 'زمان ذخیرهٔ گزارش: ' + new Date(data.savedAt).toLocaleString('fa-IR');
+      $('#ledgerSharedDialog').showModal();
+    } catch { alert('فایل نمایش معتبر نیست. فایل ساخته‌شده با «ذخیرهٔ فایل برای ارسال» را انتخاب کنید.'); }
+  });
   function selection(){
     const legs = selected();
     const valid = legs.length && legs.every(p => ledgerPnl(p, 0) !== null);
