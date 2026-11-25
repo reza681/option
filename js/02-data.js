@@ -154,6 +154,7 @@ async function fetchMarketData(){
   $('#ccBadge').textContent = callCount;
   if ($('#rpBadge')) $('#rpBadge').textContent = (state.savedPositions || []).length;
 
+  if (!$('[data-panel="rollwatch"]').classList.contains('hidden')) renderRollWatch();
   if (!$('[data-panel="watchlist"]').classList.contains('hidden')) renderWatchlist();
   if (!$('[data-panel="marketmap"]').classList.contains('hidden')) renderMarketMap();
   if (!$('[data-panel="coveredcall"]').classList.contains('hidden')) renderCoveredCall();
