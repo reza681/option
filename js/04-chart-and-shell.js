@@ -604,6 +604,7 @@ document.querySelectorAll('.nav-item').forEach(btn => {
     hideChartTip();
     document.querySelectorAll('.nav-item').forEach(b => b.classList.toggle('active', b === btn));
     document.querySelectorAll('[data-panel]').forEach(p => { p.classList.toggle('hidden', p.dataset.panel !== view); });
+    if (view === 'rollwatch') renderRollWatch();
     if (view === 'watchlist') renderWatchlist();
     if (view === 'coveredcall') renderCoveredCall();
     if (view === 'marketmap'){ __mmRetry = 0; setTimeout(renderMarketMap, 0); }
