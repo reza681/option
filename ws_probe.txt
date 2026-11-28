@@ -1,7 +1,0 @@
-  lead
-alpha   
-beta  
-var x='\n'; var re=/[\u200c\s]/; var s='<\/script>'; var f='موقعیت‌ها'; var nb='تست این'; var q="dquote";
-gamma
-
-end  
