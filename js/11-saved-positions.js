@@ -1219,7 +1219,7 @@ function exportRpExcel(){
     let totalQty = 0, totalAmt = 0, totalClose = 0, totalPnl = 0, totalPrem = 0;
     let sumAvgPrem = 0;
     let sumYtmW = 0, totalYtmW = 0;
-    let sumAnnOffsetW = 0, totalAnnOffsetW = 0;
+    let sumDaysW = 0, totalDaysW = 0;
     const data = [];
     
     (rows || []).forEach(r => {
@@ -1242,12 +1242,15 @@ function exportRpExcel(){
       
       totalQty += r.qty;
       totalAmt += amt; totalClose += closeAmt; totalPnl += pnlPure;
+      if (r.passedDays !== null && r.passedDays > 0 && isFinite(amt) && amt > 0) {
+        sumDaysW += r.passedDays * amt;
+        totalDaysW += amt;
+      }
       
       if (!r.isUnderlying) {
         sumAvgPrem += r.P_avg;
         const weight = Math.abs(amt) || 1;
         if (r.ytm !== null && isFinite(r.ytm)) { sumYtmW += r.ytm * weight; totalYtmW += weight; }
-        if (apct !== '' && isFinite(apct)) { sumAnnOffsetW += (apct*100) * weight; totalAnnOffsetW += weight; }
         
         if (r.direction === 'sell') totalPrem += (r.pureOptionAmount || 0);
       }
@@ -1256,13 +1259,18 @@ function exportRpExcel(){
     });
     
     const avgYtm = totalYtmW > 0 ? (sumYtmW / totalYtmW) : '';
-    const avgAnnOffset = totalAnnOffsetW > 0 ? (sumAnnOffsetW / totalAnnOffsetW) : '';
+    /* میانگین وزنی سالانه آفست = سالانه‌سازی «جمع سود/زیان ÷ جمع پایه سهم + پرمیوم» — علامتش همیشه با جمع کل هم‌جهت است */
+    let avgAnnOffset = '';
+    if (totalAmt > 0 && totalDaysW > 0 && isFinite(totalPnl)) {
+      const annAggOffset = annualizePct((totalPnl / totalAmt) * 100, sumDaysW / totalDaysW, getAnnualMode());
+      if (annAggOffset !== null && isFinite(annAggOffset)) avgAnnOffset = annAggOffset / 100;
+    }
     
     const hdr = ['#','نام استراتژی','نوع','نماد','جهت','قیمت اعمال','سررسید','تعداد','میانگین پرمیوم/قیمت','تاریخ سرمایه‌گذاری','روز سپری شده','پوشش','مبلغ موقعیت','مبلغ بستن','سود / زیان','درصد آفست','سالانه آفست','وضعیت','YTM سالانه'];
     const tot = ['جمع کل', '', '', '', '', '', '', totalQty, sumAvgPrem, '', '', '', totalAmt, totalClose, totalPnl, '', '', '', ''];
     const aoa = [hdr, ...data, tot, [], 
       ['میانگین وزنی YTM', avgYtm ? (avgYtm/100) : ''], 
-      ['میانگین وزنی سالانه آفست', avgAnnOffset ? (avgAnnOffset/100) : ''], 
+      ['میانگین وزنی سالانه آفست', avgAnnOffset !== '' ? avgAnnOffset : ''], 
       [], 
       ['جمع پرمیوم دریافتی (فروش اختیار)', totalPrem], 
       ['توجه: در اختیارهای پوشش‌داده‌شده، «سود/زیان» و درصد آفست بر مبنای ترکیبی (سهم + اختیار) است؛ مبالغ موقعیت/بستن مختص همان ردیف‌اند. جمع کل، مجموع واقعی بدون شمارش مضاعف است.']
@@ -1296,7 +1304,7 @@ function printRpTableOnly() {
   let totalQty = 0, totalAmount = 0, totalClose = 0, totalPnl = 0;
   let sumPremReceived = 0, sumPremPaid = 0;
   let sumYtmWeighted = 0, totalYtmWeight = 0;
-  let sumAnnOffsetWeighted = 0, totalAnnOffsetWeight = 0;
+  let sumDaysWeighted = 0, totalDaysWeight = 0;
   let sumPassedDays = 0, cntPassedDays = 0;
   let sumRemainingDays = 0, cntRemainingDays = 0;
   let sumAvgPrem = 0; 
@@ -1313,6 +1321,11 @@ function printRpTableOnly() {
     totalClose += closeAmt;
     totalPnl += pnl;
 
+    if (r.passedDays !== null && r.passedDays > 0 && isFinite(amt) && amt > 0) {
+      sumDaysWeighted += r.passedDays * amt;
+      totalDaysWeight += amt;
+    }
+
     if (!r.isUnderlying) {
       sumAvgPrem += r.P_avg;
       
@@ -1320,13 +1333,6 @@ function printRpTableOnly() {
       else sumPremPaid += (r.pureOptionAmount || 0);
 
       const weight = Math.abs(amt) || 1;
-      const opct = (r.combinedOffsetPct !== undefined) ? r.combinedOffsetPct : (r.amount > 0 ? (r.offsetPnl / r.amount) * 100 : 0);
-      let apct = (r.combinedAnnOffsetPct !== undefined) ? r.combinedAnnOffsetPct : null;
-      
-      if (apct !== null && isFinite(apct)) {
-        sumAnnOffsetWeighted += apct * weight;
-        totalAnnOffsetWeight += weight;
-      }
       if (r.ytm !== null && isFinite(r.ytm)) {
         sumYtmWeighted += r.ytm * weight;
         totalYtmWeight += weight;
@@ -1343,7 +1349,14 @@ function printRpTableOnly() {
     }
   });
 
-  const avgAnnOffset = totalAnnOffsetWeight > 0 ? (sumAnnOffsetWeighted / totalAnnOffsetWeight) : null;
+  /* میانگین وزنی سود سالانه آفست:
+     سالانه‌سازیِ «جمع سود/زیان ÷ جمع پایه (سهم + پرمیوم)» است؛
+     علامتش همیشه با «جمع کل» سود/زیان هم‌جهت است.
+     (روش قبلی — میانگین وزن‌دار نرخ‌های سالانه‌شدهٔ ردیفی با وزن پرمیوم — به‌علت
+     نامتقارنی سالانه‌سازی مرکب می‌توانست با زیان کل پرتفوی، عدد مثبت نشان دهد.) */
+  const avgAnnOffset = (totalAmount > 0 && totalDaysWeight > 0 && isFinite(totalPnl))
+    ? annualizePct((totalPnl / totalAmount) * 100, sumDaysWeighted / totalDaysWeight, getAnnualMode())
+    : null;
   const avgYtm = totalYtmWeight > 0 ? (sumYtmWeighted / totalYtmWeight) : null;
   const avgPassedDays = cntPassedDays > 0 ? (sumPassedDays / cntPassedDays) : 0;
   const avgRemainingDays = cntRemainingDays > 0 ? (sumRemainingDays / cntRemainingDays) : 30;
