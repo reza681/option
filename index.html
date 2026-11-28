@@ -13,7 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vazirmatn@33.0.3/Vazirmatn-font-face.css">
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.js"></script>
 
 <script src="js/00-theme-init.js"></script>
 
@@ -352,13 +352,36 @@
       <section class="card"><div class="card-head"><h2>تاریخچهٔ سود و زیان تحقق‌یافته</h2></div><div class="card-body" id="ledgerHistory"></div></section>
       <section class="card"><details class="card-body" id="ledgerOpen"><summary>نمایش سود و زیان موقعیت‌های باز</summary><div id="ledgerMarks"></div></details></section>
       <dialog id="ledgerDialog" aria-labelledby="ledgerTitle"><form id="ledgerForm">
-        <h2 id="ledgerTitle">ثبت قیمت‌های خروج</h2><p>قیمت واقعی خروج هر واحد را به ریال وارد کنید. برای اختیار بی‌ارزش می‌توانید صفر ثبت کنید.</p>
-        <label id="ledgerNameRow" hidden>نام استراتژی <input id="ledgerName" type="text"></label>
-        <div class="table-wrap" id="ledgerInputs"></div>
-        <label>مجموع کارمزد ورود و خروج استراتژی (ریال، اختیاری) <input id="ledgerFees" type="number" min="0" step="any" placeholder="۰"></label>
-        <label>تاریخ بسته شدن (شمسی) <input id="ledgerCloseDate" dir="ltr" placeholder="۱۴۰۵/۰۱/۱۵"></label>
-        <fieldset><legend>بازده از ورود تا سررسید</legend><label>سرمایهٔ درگیر در زمان ورود (ریال) <input id="ledgerCapital" type="number" min="0" step="any"></label> <label>تاریخ ورود (شمسی) <input id="ledgerFrom" dir="ltr" placeholder="۱۴۰۵/۰۱/۱۵"></label> <label>سررسید مبنا (شمسی) <input id="ledgerTo" dir="ltr" placeholder="۱۴۰۵/۰۶/۱۵"></label><p>برای فروش اختیار، وجه تضمین یا سرمایهٔ واقعی درگیر را وارد کنید. برای چند سررسید، پایان دوره را خودتان تعیین کنید. در خروج زودهنگام فرض می‌شود وجه تا سررسید بدون سود مانده است.</p></fieldset>
-        <p id="ledgerPreview" aria-live="polite"></p><div class="actions-row"><button type="submit" class="primary">تأیید و ذخیره</button><button type="button" id="ledgerCancel">انصراف</button></div>
+        <header class="ldg-head">
+          <div class="ldg-icon" id="ledgerIcon">✏️</div>
+          <div class="ldg-titles">
+            <h2 id="ledgerTitle">ثبت قیمت‌های خروج</h2>
+            <p class="ldg-sub" id="ledgerSub">قیمت واقعی خروج هر واحد را به ریال وارد کنید. برای اختیار بی‌ارزش می‌توانید صفر ثبت کنید.</p>
+          </div>
+          <button type="button" class="ldg-close" id="ledgerClose" title="بستن پنجره" aria-label="بستن">✕</button>
+        </header>
+        <div class="ldg-body">
+          <div id="ledgerNameRow" class="ldg-name" hidden><label class="ldg-field" for="ledgerName">نام استراتژی <input id="ledgerName" type="text"></label></div>
+          <div class="ldg-sec-title">🧾 پایه‌های موقعیت و قیمت‌ها</div>
+          <div class="table-wrap" id="ledgerInputs"></div>
+          <div class="ldg-grid">
+            <label class="ldg-field" for="ledgerFees">مجموع کارمزد ورود و خروج استراتژی (ریال، اختیاری) <input id="ledgerFees" type="number" min="0" step="any" placeholder="۰"></label>
+            <label class="ldg-field" for="ledgerCloseDate">تاریخ بسته شدن (شمسی) <input id="ledgerCloseDate" dir="ltr" placeholder="۱۴۰۵/۰۱/۱۵"></label>
+          </div>
+          <fieldset class="ldg-fieldset"><legend>📈 بازده از ورود تا سررسید</legend>
+            <div class="ldg-grid-3">
+              <label class="ldg-field" for="ledgerCapital">سرمایهٔ درگیر در زمان ورود (ریال) <input id="ledgerCapital" type="number" min="0" step="any"></label>
+              <label class="ldg-field" for="ledgerFrom">تاریخ ورود (شمسی) <input id="ledgerFrom" dir="ltr" placeholder="۱۴۰۵/۰۱/۱۵"></label>
+              <label class="ldg-field" for="ledgerTo">سررسید مبنا (شمسی) <input id="ledgerTo" dir="ltr" placeholder="۱۴۰۵/۰۶/۱۵"></label>
+            </div>
+            <p class="ldg-help">برای فروش اختیار، وجه تضمین یا سرمایهٔ واقعی درگیر را وارد کنید. برای چند سررسید، پایان دوره را خودتان تعیین کنید. در خروج زودهنگام فرض می‌شود وجه تا سررسید بدون سود مانده است.</p>
+          </fieldset>
+          <p id="ledgerPreview" class="ldg-preview" aria-live="polite"></p>
+        </div>
+        <footer class="ldg-foot">
+          <span class="ldg-foot-hint">تغییرات پس از «تأیید و ذخیره» در تاریخچه ثبت می‌شود</span>
+          <div class="actions-row"><button type="submit" class="primary">✓ تأیید و ذخیره</button><button type="button" id="ledgerCancel">انصراف</button></div>
+        </footer>
       </form></dialog>
     </div>
 
