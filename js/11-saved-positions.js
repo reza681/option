@@ -22,7 +22,6 @@
   syncStrategyNames();
 })();
 
-// Both the report and the closing ledger group the actual open legs, not quotes or cached names.
 function rpOpenStrategies(){
   const groups = new Map();
   for (const p of state.savedPositions){
@@ -862,7 +861,9 @@ function renderReportPanel(){
           <option value="burned" ${!r.assigned ? 'selected' : ''}>سوخت</option>
         </select>`;
 
-    const pnlCls = r.offsetPnl >= 0 ? 'pos' : 'neg';
+    /* سود/زیان نمایشی هم‌مبنای ستون‌های درصد آفست: برای اختیار پوشش‌داده‌شده، مبنای ترکیبی (سهم + اختیار) */
+    const showPnl = (r.combinedPnl !== undefined && isFinite(r.combinedPnl)) ? r.combinedPnl : r.offsetPnl;
+    const pnlCls = showPnl >= 0 ? 'pos' : 'neg';
     
     let amountLabel = '—';
     if (r.isUnderlying) amountLabel = 'ارزش سهم';
@@ -884,7 +885,7 @@ function renderReportPanel(){
     if (r.isUnderlying && r.coveredQtyTotal > 0) {
       coveredNote = `<br><small style="color:var(--muted);font-size:9px">پوشش: ${fmt0(r.coveredQtyTotal)}</small>`;
     } else if (!r.isUnderlying && r.coveredQty > 0) {
-      coveredNote = `<br><small style="color:var(--muted);font-size:9px">سهم: ${fmt0(r.underlyingPnlCovered)}</small>`;
+      coveredNote = `<br><small style="color:var(--muted);font-size:9px">اختیار: ${fmt0(r.pureOptionOffsetPnl)} · سهم: ${fmt0(r.underlyingPnlCovered)}</small>`;
     }
 
     tbody += `<tr data-rp-row="${i}" data-rp-id="${r.pos.id}">
@@ -907,7 +908,7 @@ function renderReportPanel(){
       
       <td class="num"><b>${fmt0(r.amount)}</b><br><small style="color:var(--muted);font-size:10.5px">${amountLabel}</small></td>
       <td class="num"><b>${fmt0(r.closeAmount)}</b><br><small style="color:var(--muted);font-size:10.5px">${closeLbl} · آخرین: ${fmt0(r.P_market)}</small></td>
-      <td class="num ${pnlCls}"><b>${fmt0(r.offsetPnl)}</b>${coveredNote}</td>
+      <td class="num ${pnlCls}"><b>${fmt0(showPnl)}</b>${coveredNote}</td>
       
       <td class="num ${offsetPctCls}"><b>${offsetPctTxt}</b></td>
       <td class="num ${annOffsetPctCls}"><b>${annOffsetTxt}</b></td>
@@ -986,7 +987,7 @@ function renderReportPanel(){
     });
   });
 
-  if (tableHint) tableHint.textContent = `${rows.length} موقعیت | 💡 برای ویرایش مقادیر کلیک کنید`;
+  if (tableHint) tableHint.textContent = `${rows.length} موقعیت | 💡 برای ویرایش مقادیر کلیک کنید | در اختیارهای پوشش‌داده‌شده، سود/زیان و درصد آفست بر مبنای سهم + اختیار است`;
   if (statusEl) statusEl.innerHTML = `<span class="dot ok"></span>${rows.length} موقعیت`;
   if (badgeEl) badgeEl.textContent = state.savedPositions.length;
 
@@ -1231,7 +1232,8 @@ function exportRpExcel(){
       
       const amt = r.isUnderlying ? (r.qty * r.P_avg) : (r.pureOptionAmount || r.amount);
       const closeAmt = r.isUnderlying ? (r.qty * r.P_market) : (r.pureOptionCloseAmount || r.closeAmount);
-      const pnl = r.isUnderlying ? ((r.direction==='buy'?(r.P_market-r.P_avg):(r.P_avg-r.P_market))*r.qty) : (r.pureOptionOffsetPnl || r.offsetPnl);
+      const pnl = r.isUnderlying ? ((r.direction==='buy'?(r.P_market-r.P_avg):(r.P_avg-r.P_market))*r.qty) : ((r.combinedPnl !== undefined && isFinite(r.combinedPnl)) ? r.combinedPnl : (r.pureOptionOffsetPnl || r.offsetPnl));
+      const pnlPure = r.isUnderlying ? pnl : (r.pureOptionOffsetPnl || r.offsetPnl);
       
       const opct = (r.combinedOffsetPct !== undefined) ? (r.combinedOffsetPct / 100) : (r.amount > 0 ? (r.offsetPnl / r.amount) : 0);
       const apct = (r.combinedAnnOffsetPct !== undefined && r.combinedAnnOffsetPct !== null && isFinite(r.combinedAnnOffsetPct)) 
@@ -1239,7 +1241,7 @@ function exportRpExcel(){
         : ((r.passedDays !== null && r.passedDays > 0) ? (annualizePct(opct * 100, r.passedDays, getAnnualMode()) / 100) : '');
       
       totalQty += r.qty;
-      totalAmt += amt; totalClose += closeAmt; totalPnl += pnl;
+      totalAmt += amt; totalClose += closeAmt; totalPnl += pnlPure;
       
       if (!r.isUnderlying) {
         sumAvgPrem += r.P_avg;
@@ -1263,7 +1265,7 @@ function exportRpExcel(){
       ['میانگین وزنی سالانه آفست', avgAnnOffset ? (avgAnnOffset/100) : ''], 
       [], 
       ['جمع پرمیوم دریافتی (فروش اختیار)', totalPrem], 
-      ['توجه: مبالغ موقعیت و سود شامل ترکیب سهام پوشش‌داده‌شده نیست و برای هر ردیف جداگانه محاسبه شده است.']
+      ['توجه: در اختیارهای پوشش‌داده‌شده، «سود/زیان» و درصد آفست بر مبنای ترکیبی (سهم + اختیار) است؛ مبالغ موقعیت/بستن مختص همان ردیف‌اند. جمع کل، مجموع واقعی بدون شمارش مضاعف است.']
     ];
     
     const ws = XLSX.utils.aoa_to_sheet(aoa);
@@ -1498,7 +1500,8 @@ function printRpTableOnly() {
 
     const amt = r.isUnderlying ? (r.qty * r.P_avg) : (r.pureOptionAmount || r.amount);
     const closeAmt = r.isUnderlying ? (r.qty * r.P_market) : (r.pureOptionCloseAmount || r.closeAmount);
-    const pnl = r.isUnderlying ? ((r.direction==='buy'?(r.P_market-r.P_avg):(r.P_avg-r.P_market))*r.qty) : (r.pureOptionOffsetPnl || r.offsetPnl);
+    const pnl = r.isUnderlying ? ((r.direction==='buy'?(r.P_market-r.P_avg):(r.P_avg-r.P_market))*r.qty) : ((r.combinedPnl !== undefined && isFinite(r.combinedPnl)) ? r.combinedPnl : (r.pureOptionOffsetPnl || r.offsetPnl));
+    const coveredSplit = (!r.isUnderlying && r.coveredQty > 0) ? `<br><small>اختیار: ${fmt0(r.pureOptionOffsetPnl)} · سهم: ${fmt0(r.underlyingPnlCovered)}</small>` : '';
     
     const opct = (r.combinedOffsetPct !== undefined) ? r.combinedOffsetPct : (r.amount > 0 ? (r.offsetPnl / r.amount) * 100 : 0);
     const apct = (r.combinedAnnOffsetPct !== undefined) ? r.combinedAnnOffsetPct : ((r.passedDays !== null && r.passedDays > 0) ? annualizePct(opct, r.passedDays, getAnnualMode()) : null);
@@ -1523,7 +1526,7 @@ function printRpTableOnly() {
       <td class="num">${cov}</td>
       <td class="num">${fmt0(amt)}</td>
       <td class="num">${fmt0(closeAmt)}</td>
-      <td class="num ${pnl >= 0 ? 'pos' : 'neg'}">${fmt0(pnl)}</td>
+      <td class="num ${pnl >= 0 ? 'pos' : 'neg'}">${fmt0(pnl)}${coveredSplit}</td>
       <td class="num ${opct >= 0 ? 'pos' : 'neg'}">${opctStr}</td>
       <td class="num ${apctCls}">${apctStr}</td>
       <td>${st}</td>
@@ -1545,7 +1548,7 @@ function printRpTableOnly() {
 
   tbody += `<tr class="mean-row">
     <td colspan="15" style="text-align:right; padding-right:12px;">
-      <b>میانگین وزنی سود سالانه آفست:</b>
+      <b>میانگین وزنی سود سالانه آفست (پایه پوششی: سهم + پرمیوم):</b>
     </td>
     <td class="num ${avgAnnOffset !== null && avgAnnOffset >= 0 ? 'pos' : 'neg'}" style="font-weight:800;">
       ${avgAnnOffset !== null ? (avgAnnOffset >= 0 ? '+' : '') + avgAnnOffset.toFixed(2) + '%' : '—'}
@@ -1841,6 +1844,7 @@ function printRpTableOnly() {
       </thead>
       <tbody>${tbody}</tbody>
     </table>
+    <div style="font-size:9.5px;color:#64748b;padding:8px 20px 2px;line-height:1.9">در ردیف اختیارهای پوشش‌داده‌شده با سهم (کال پوشیده)، «سود / زیان» و درصد آفست بر مبنای موقعیت ترکیبی (سهم + اختیار) محاسبه می‌شوند تا هم‌علامت باشند؛ تفکیک پای اختیار و سهم زیر همان ردیف درج شده است. «جمع کل» مجموع واقعی سهم و همهٔ اختیارهاست (بدون شمارش مضاعف).</div>
 
     ${window.__printChartBase64 ? `
     <div class="chart-container">
